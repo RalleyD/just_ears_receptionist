@@ -1,0 +1,16 @@
+{
+    "name": "just-ears-voice-receptionist",
+    "version": "1.0.0",
+    "description": "Voice receptionist for Just Ears Clinic using OpenAI Realtime API",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "ws": "^8.14.2",
+        "twilio": "^4.19.0",
+        "axios": "^1.6.2",
+        "dotenv": "^16.3.1"
+    }
+}
