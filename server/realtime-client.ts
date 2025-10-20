@@ -59,6 +59,7 @@ INFORMATION QUERIES:
 
 const FUNCTION_DEFINITIONS = [
   {
+    type: 'function',
     name: 'check_appointment_availability',
     description: 'Check if a specific appointment slot is available at Just Ears Clinic. Returns availability status and conflict details if unavailable. Use this before creating appointments.',
     parameters: {
@@ -89,6 +90,7 @@ const FUNCTION_DEFINITIONS = [
     }
   },
   {
+    type: 'function',
     name: 'create_appointment',
     description: 'Create a confirmed appointment in the calendar. Only call this after checking availability and collecting all patient information.',
     parameters: {
@@ -127,6 +129,7 @@ const FUNCTION_DEFINITIONS = [
     }
   },
   {
+    type: 'function',
     name: 'get_clinic_information',
     description: 'Retrieve information about Just Ears Clinic services, procedures, locations, or pricing from the website.',
     parameters: {
@@ -146,6 +149,7 @@ const FUNCTION_DEFINITIONS = [
 export function handleConnection(twilioWs: WebSocket) {
   let openaiWs: WebSocket | null = null;
   let streamSid: string | null = null;
+  let responseInProgress = false;
 
   // Connect to OpenAI Realtime API
   openaiWs = new WebSocket(config.openai.realtimeUrl, {
@@ -200,6 +204,20 @@ export function handleConnection(twilioWs: WebSocket) {
           console.log('Session updated successfully');
           break;
 
+        case 'input_audio_buffer.speech_started':
+          console.log('User started speaking');
+          responseInProgress = false;
+          break;
+
+        case 'input_audio_buffer.speech_stopped':
+          console.log('User stopped speaking');
+          break;
+
+        case 'response.done':
+          console.log('Response completed');
+          responseInProgress = false;
+          break;
+
         case 'response.audio.delta':
           // Send audio back to Twilio
           if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
@@ -234,8 +252,9 @@ export function handleConnection(twilioWs: WebSocket) {
           };
           openaiWs!.send(JSON.stringify(functionOutput));
           
-          // Request response generation
+          // Request response generation with the function result
           openaiWs!.send(JSON.stringify({ type: 'response.create' }));
+          responseInProgress = true;
           break;
 
         case 'error':
@@ -274,6 +293,10 @@ export function handleConnection(twilioWs: WebSocket) {
 
         case 'media':
           // Forward audio to OpenAI
+          // Server-side VAD (configured in session) will automatically:
+          // 1. Detect speech start/stop
+          // 2. Commit audio buffer when user stops speaking
+          // 3. Process and generate response
           if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
             const audioAppend = {
               type: 'input_audio_buffer.append',
