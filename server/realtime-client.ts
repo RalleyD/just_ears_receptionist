@@ -44,7 +44,7 @@ PHONE BOOKING ONLY (Cannot book via AI):
   Response: "Custom ear plugs require a phone consultation. Please call 03455 272727."
 
 Topics that REQUIRE function calls:
-- "microsuction" - when asking about ear wax removal
+- "microsuction" - when asking about ear wax removal - see AGE VERIFICATION below
 - "custom-ear-plugs" - when asking about ear moulds
 - "hearing-tests" - when asking about hearing services
 - "locations" - when asking about clinic locations or addresses
@@ -55,13 +55,12 @@ NEVER say prices or service details without calling the function first.
 CONVERSATION FLOW:
 
 1. INTRODUCTION:
-"Hello, Just Ears Hearing, this is Robin. How can I help you today?"
+"Hello, you've reached Just Ears Hearing. My name is Robin. How can I help you today?"
 
 2. AGE VERIFICATION (CRITICAL):
-Always verify patient age early:
+When the enquiry relates to the Microsuction (ear wax removal) service, ALWAYS ask for the caller's age BEFORE providing information about the service and the price:
 - Under 18: Direct to phone booking at 03455 272727
 - 18+: Proceed with online booking
-- Over 18 but enquring to book for under 18: Ensure service information provided is specific to under 18s.
 
 3. SERVICE INFORMATION (CRITICAL):
 MANDATORY: When patient asks about any service, pricing or location information:
@@ -358,6 +357,7 @@ export function handleConnection(twilioWs: WebSocket) {
   let streamSid: string | null = null;
   let twCallSid: string | null = null;
   let responseInProgress = false;
+  let transferPending: object | null = null;
 
   // Connect to OpenAI Realtime API
   openaiWs = new WebSocket(config.openai.realtimeUrl, {
@@ -398,6 +398,7 @@ export function handleConnection(twilioWs: WebSocket) {
     console.log("Session configured");
   });
 
+  // Handle OpenAI messages
   openaiWs.on("message", async (data: WebSocket.Data) => {
     try {
       const response = JSON.parse(data.toString());
@@ -422,6 +423,7 @@ export function handleConnection(twilioWs: WebSocket) {
               },
             }),
           );
+          // TODO refactor sendOpenAiResponse(openaiWs: WebSocket, instruction: string)
           break;
 
         case "input_audio_buffer.speech_started":
@@ -436,10 +438,50 @@ export function handleConnection(twilioWs: WebSocket) {
         case "response.done":
           console.log("Response completed");
           responseInProgress = false;
+          if (transferPending && transferPending.outputAdded) {
+            console.log("AI finished speaking, initiating transfer");
+
+            const twClient = twilio(
+              config.twilio.accountSid,
+              config.twilio.authToken,
+            );
+
+            const twiMl = createTwiMlTransfer(transferPending.phoneNumber);
+
+            try {
+              // update the twilio client to use the new TwiMl
+              await twClient.calls(transferPending.callSid).update({
+                twiml: twiMl,
+              });
+
+              console.log("Call transferred successfully");
+
+              // close OpenAI websocket connection to avoid token leakage
+              if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
+                openaiWs.close();
+                console.log("OpenAI WebSocket closed after transfer");
+              }
+            } catch (error) {
+              console.error("Error transferring call:", error);
+            }
+
+            transferPending = null; // clear the object
+          }
+          break;
+
+        case "response.output_item.added":
+          console.log("Response added");
+          if (transferPending) {
+            transferPending.outputAdded = true;
+          }
+          break;
+
+        case "response.output_item.done":
+          console.log("Response done");
           break;
 
         case "response.audio.delta":
-          // Send audio back to Twilio
+          // Send audio back to Twilio: OpenAi -> Twilio -> Caller
           if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
             const audioPayload = {
               event: "media",
@@ -463,35 +505,33 @@ export function handleConnection(twilioWs: WebSocket) {
 
           // Check if transfer function was called
           if (result.action === "transfer") {
-            console.log("Transferring call to human receptionist");
+            console.log(
+              "Transfer requested, will execute after AI finishes speaking",
+            );
 
-            if (twCallSid) {
-              const twClient = twilio(
-                config.twilio.accountSid,
-                config.twilio.authToken,
-              );
+            // store transfer details
+            transferPending = {
+              phoneNumber: result.phone_number,
+              callSid: twCallSid,
+              outputAdded: false,
+            };
 
-              // Create TwiML to transfer the call
-              const dialMl = createTwiMlTransfer(result.phone_number);
+            const functionOutput = {
+              type: "conversation.item.create",
+              item: {
+                type: "function_call_output",
+                call_id: response.call_id,
+                output: JSON.stringify({
+                  message:
+                    "Transfer approved. Inform the caller they are being transferred and say goodbye professionally.",
+                }),
+              },
+            };
 
-              try {
-                // update the twilio client to use the new TwiMl
-                await twClient.calls(twCallSid).update({
-                  twiml: dialMl,
-                });
+            openaiWs!.send(JSON.stringify(functionOutput));
+            openaiWs!.send(JSON.stringify({ type: "response.create" }));
 
-                console.log("Call transferred initiated");
-                // close OpenAI websocket connection to avoid token leakage
-                if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
-                  openaiWs.close();
-                  console.log("OpenAI WebSocket closed after transfer");
-                }
-              } catch (error) {
-                console.error("Error transferring call:", error);
-              }
-            }
-            // We don't want to send a function result back to OpenAI here
-            return;
+            return; // exit early to let the AI speak the goodbye message
           }
 
           // Send result back to OpenAI
@@ -584,4 +624,17 @@ export function handleConnection(twilioWs: WebSocket) {
   twilioWs.on("error", (error) => {
     console.error("Twilio WebSocket error:", error);
   });
+}
+
+function sendOpenAiResponse(openaiWs: WebSocket, instruction: string) {
+  console.log("Sending OpenAI response with instruction: ", instruction);
+  openaiWs.send(
+    JSON.stringify({
+      type: "response.create",
+      response: {
+        modalities: ["audio", "text"],
+        instructions: instruction,
+      },
+    }),
+  );
 }
