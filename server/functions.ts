@@ -37,6 +37,9 @@ export async function executeFunctionCall(functionName: string, args: any) {
       case "get_clinic_information":
         return await getClinicInfo(args);
 
+      case "transfer_to_receptionist":
+        return await transferToReceptionist(args);
+
       default:
         return { error: `Unknown function: ${functionName}` };
     }
@@ -100,4 +103,12 @@ async function getClinicInfo(params: GetClinicInfoParams) {
 
   const response = await axios.post(url, payload);
   return response.data;
+}
+
+async function transferToReceptionist(params: { reason: string }) {
+  return {
+    action: "transfer",
+    phone_number: config.transfer.number,
+    reason: params.reason,
+  };
 }

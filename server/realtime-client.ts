@@ -1,6 +1,9 @@
 import WebSocket from "ws";
 import { config } from "./config";
 import { executeFunctionCall } from "./functions";
+import { createTwiMlTransfer } from "./twilio-handler";
+import twilio from "twilio";
+import { except } from "drizzle-orm/mysql-core";
 
 const SYSTEM_MESSAGE = `You are Robin, a professional medical receptionist for Just Ears Hearing, an ear care clinic specializing in microsuction ear wax removal.
 
@@ -160,6 +163,14 @@ Response: "This needs medical evaluation. Please contact your GP or call 111."
 
 TECHNICAL ISSUES:
 Response: "I'm having trouble with that. Let me transfer you to our team."
+
+CALL TRANSFER:
+When a patient requests to speak with a human:
+- Use transfer_to_receptionist function
+- Respond: "Of course, let me connect you with a member of our team. Please hold."
+When you are unable to help or handle a query:
+- Use transfer_to_receptionist function
+- Respond: "I'm sorry, I'm unable to help with that. Let me connect you with a member of our team. Please hold."
 
 KEY RULES:
 1. Always verify age first - under 18 cannot book via AI
@@ -323,11 +334,29 @@ const FUNCTION_DEFINITIONS = [
       required: ["topic"],
     },
   },
+  {
+    type: "function",
+    name: "transfer_to_receptionist",
+    description:
+      "Transfer the call to a human receptionist when the AI cannot handle the query or the patient requests to speak to a human.",
+    parameters: {
+      type: "object",
+      properties: {
+        reason: {
+          type: "string",
+          description:
+            "Reason for transfer (e.g., 'patient request', 'agent unable to handle query', 'emergency')",
+        },
+      },
+      required: ["reason"],
+    },
+  },
 ];
 
 export function handleConnection(twilioWs: WebSocket) {
   let openaiWs: WebSocket | null = null;
   let streamSid: string | null = null;
+  let twCallSid: string | null = null;
   let responseInProgress = false;
 
   // Connect to OpenAI Realtime API
@@ -389,7 +418,7 @@ export function handleConnection(twilioWs: WebSocket) {
               response: {
                 modalities: ["audio", "text"],
                 instructions:
-                  "Greet the caller with your introduction as specified in the system prompt INTRODUCTION section.",
+                  "Greet the caller with your introduction as specified in the INTRODUCTION section of the system instructions.",
               },
             }),
           );
@@ -431,6 +460,39 @@ export function handleConnection(twilioWs: WebSocket) {
             response.name,
             JSON.parse(response.arguments),
           );
+
+          // Check if transfer function was called
+          if (result.action === "transfer") {
+            console.log("Transferring call to human receptionist");
+
+            if (twCallSid) {
+              const twClient = twilio(
+                config.twilio.accountSid,
+                config.twilio.authToken,
+              );
+
+              // Create TwiML to transfer the call
+              const dialMl = createTwiMlTransfer(result.phone_number);
+
+              try {
+                // update the twilio client to use the new TwiMl
+                await twClient.calls(twCallSid).update({
+                  twiml: dialMl,
+                });
+
+                console.log("Call transferred initiated");
+                // close OpenAI websocket connection to avoid token leakage
+                if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
+                  openaiWs.close();
+                  console.log("OpenAI WebSocket closed after transfer");
+                }
+              } catch (error) {
+                console.error("Error transferring call:", error);
+              }
+            }
+            // We don't want to send a function result back to OpenAI here
+            return;
+          }
 
           // Send result back to OpenAI
           const functionOutput = {
@@ -479,7 +541,10 @@ export function handleConnection(twilioWs: WebSocket) {
       switch (msg.event) {
         case "start":
           streamSid = msg.start.streamSid;
+          twCallSid = msg.start.callSid;
+
           console.log("Twilio stream started:", streamSid);
+          console.log("Twilio call SID: ", twCallSid);
           break;
 
         case "media":
