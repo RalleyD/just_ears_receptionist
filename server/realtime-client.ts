@@ -448,24 +448,27 @@ export function handleConnection(twilioWs: WebSocket) {
 
             const twiMl = createTwiMlTransfer(transferPending.phoneNumber);
 
-            try {
-              // update the twilio client to use the new TwiMl
-              await twClient.calls(transferPending.callSid).update({
-                twiml: twiMl,
-              });
+            // add a short delay to allow the AI to finish speaking
+            setTimeout(async () => {
+              try {
+                // update the twilio client to use the new TwiMl
+                twClient.calls(transferPending.callSid).update({
+                  twiml: twiMl,
+                });
 
-              console.log("Call transferred successfully");
+                console.log("Call transferred successfully");
 
-              // close OpenAI websocket connection to avoid token leakage
-              if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
-                openaiWs.close();
-                console.log("OpenAI WebSocket closed after transfer");
+                // close OpenAI websocket connection to avoid token leakage
+                if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
+                  openaiWs.close();
+                  console.log("OpenAI WebSocket closed after transfer");
+                }
+              } catch (error) {
+                console.error("Error transferring call:", error);
               }
-            } catch (error) {
-              console.error("Error transferring call:", error);
-            }
 
-            transferPending = null; // clear the object
+              transferPending = null; // clear the object
+            }, 3500);
           }
           break;
 
@@ -498,7 +501,7 @@ export function handleConnection(twilioWs: WebSocket) {
           console.log("Function call:", response.name);
 
           // Execute function call
-          const result = await executeFunctionCall(
+          let result = await executeFunctionCall(
             response.name,
             JSON.parse(response.arguments),
           );
@@ -516,22 +519,10 @@ export function handleConnection(twilioWs: WebSocket) {
               outputAdded: false,
             };
 
-            const functionOutput = {
-              type: "conversation.item.create",
-              item: {
-                type: "function_call_output",
-                call_id: response.call_id,
-                output: JSON.stringify({
-                  message:
-                    "Transfer approved. Inform the caller they are being transferred and say goodbye professionally.",
-                }),
-              },
+            result = {
+              message:
+                "Transfer approved. Inform the caller they are being transferred and say goodbye professionally.",
             };
-
-            openaiWs!.send(JSON.stringify(functionOutput));
-            openaiWs!.send(JSON.stringify({ type: "response.create" }));
-
-            return; // exit early to let the AI speak the goodbye message
           }
 
           // Send result back to OpenAI
