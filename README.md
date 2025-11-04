@@ -101,3 +101,37 @@ Server will be available on port 5000 (or PORT environment variable).
 - Integrated OpenAI Realtime API with function calling
 - Connected Twilio voice streams with bidirectional audio
 - Implemented N8N webhook integrations for appointment management
+
+## Cloudflare worker
+
+App:
+
+[index.js](worker/index.js)
+
+[wrangler toml](wrangler.toml)
+
+Workflow scripts:
+
+[package json](package.json)
+
+### First time setup
+
+```bash
+npm install -D wrangler
+```
+
+Sign up to cloudflare, then login to cloudlfare:
+
+```npx wrangler login```
+
+I chose this subdomain:
+
+https://just-ears-keepalive.workers.dev
+
+### Deploy the worker
+
+```npm run worker:deploy```
+
+### Monitor logs
+
+```npm run worker:tail```
