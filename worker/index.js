@@ -14,7 +14,7 @@ export default {
 
     // Optional: Handle HTTP requests to test the worker manually
     async fetch(request, env, ctx) {
-        const url = env.RENDER_URL + '/healthz';
+        const url = env.BACKEND_URL + '/healthz';
         
         try {
         const response = await fetch(url);
