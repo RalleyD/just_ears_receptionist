@@ -126,9 +126,11 @@ Sign up to cloudflare, then login to cloudlfare:
 
 I chose this subdomain:
 
-https://just-ears-keepalive.workers.dev
+https://just-ears-keepalive.just-ears-keepalive.workers.dev/
 
 ### Deploy the worker
+
+The worker should auto-deploy whenever changes to the worker are pushed on Git.
 
 ```npm run worker:deploy```
 
