@@ -1,6 +1,6 @@
 export default {
     async scheduled(event, env, ctx) {
-        const url = env.BACKEND_URL + '/api/health';
+        const url = env.BACKEND_URL;
 
         try {
             console.log(`Pinging: ${url}`);
