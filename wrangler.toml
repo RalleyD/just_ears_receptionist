@@ -7,4 +7,5 @@ crons = ["*/14 * * * *"] # every 14 mins
 
 [vars]
 # n.b this can be multiple URLs ; separated but worker/index.js will need updating
-BACKEND_URL = "https://n8n-3ote.onrender.com"
+N8N_URL = "https://n8n-3ote.onrender.com/healthz"
+VOICE_AGENT_BACKEND_URL = "https://just-ears-receptionist.onrender.com/api/health"
