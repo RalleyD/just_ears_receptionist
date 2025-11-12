@@ -1,5 +1,6 @@
 import axios from "axios";
 import { config } from "./config";
+import { Json } from "twilio/lib/interfaces";
 
 interface CheckAvailabilityParams {
   appointment_type: string;
@@ -21,6 +22,7 @@ interface CreateAppointmentParams {
 
 interface GetClinicInfoParams {
   topic: string;
+  clinic_name?: string;
 }
 
 export async function executeFunctionCall(functionName: string, args: any) {
@@ -96,10 +98,14 @@ async function createAppointment(params: CreateAppointmentParams) {
 async function getClinicInfo(params: GetClinicInfoParams) {
   const url = `${config.n8n.baseUrl}/voice-assistant`;
 
-  const payload = {
+  const payload: {action: string, topic: string, clinic_name?: string} = {
     action: "get_info",
     topic: params.topic,
   };
+
+  if (params.hasOwnProperty('clinic_name')) {
+    payload.clinic_name = params.clinic_name;
+  }
 
   const response = await axios.post(url, payload);
   return response.data;

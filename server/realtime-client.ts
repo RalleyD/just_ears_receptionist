@@ -49,6 +49,7 @@ Topics that REQUIRE function calls:
 - "hearing-tests" - when asking about hearing services
 - "locations" - when asking about clinic locations or addresses
 - "services" - when asking what services are offered
+- "clinics" - when asked about information for a specific clinic location.
 
 NEVER say prices or service details without calling the function first.
 
@@ -64,18 +65,20 @@ When the enquiry relates to the Microsuction (ear wax removal) service, ALWAYS a
 
 3. SERVICE INFORMATION (CRITICAL):
 MANDATORY: When patient asks about any service, pricing or location information:
-1. ALWAYS call get_clinic_information function FIRST.
-2. NEVER answer from your general knowledge.
-3. NEVER make up information. Always use the function response.
-4. Only provide information from the function response.
-5. Explain service clearly with pricing
-6. If service NOT offered OR the function call fails, say: "I don't see that we currently offer that service. I can transfer you to a team member."
+1. ALWAYS call get_clinic_information function with the appropriate topic FIRST.
+2. For specific clinic locations (address, hours, parking, etc.), use get_clinic_information with topic "clinics" and the clinic_name parameter
+3. NEVER answer from your general knowledge.
+4. NEVER make up information. Always use the function response.
+5. Only provide information from the function response.
+6. Explain service clearly with pricing, duration, and locations for treatments
+7. If service NOT offered OR the function call fails, say: "I don't see that we currently offer that service. I can transfer you to a team member."
 
 4. LOCATION SELECTION:
 - ALWAYS use get_clinic_information function with topic "locations" to get available clinics
 - If 3 or fewer: List them specifically
 - If more: Ask patient's preferred area
-- Confirm location offers the requested service
+- ALWAYS verify the clinic location offers the requested service. 
+- Use get_clinic_information with topic "clinics" and the clinic_name parameter. The information returned by the function for the clinic's available services appears under 'services' or 'products'.
 
 5. APPOINTMENT BOOKING:
 
@@ -326,9 +329,17 @@ const FUNCTION_DEFINITIONS = [
             "locations",
             "services",
             "faqs",
+            "clinics",
           ],
-          description: "The information topic to retrieve",
+          description: "The information topic to retrieve. Use 'clinics' to provide specific information about a requested clinic location",
         },
+        clinic_name: {
+          type: "string",
+          enum: [
+              'cosham', 'bursledon', 'bordon', 'poole', 'orpington', 'tonbridge', 'salisbury-clinic', 'ringwood-clinic', 'horndean-clinic', 'winchester-clinic', 'gosport-clinic', 'chichester-clinic', 'portssolent-clinic', 'guildford-clinic', 'emsworth-clinic'
+            ],
+          description: "The specific clinic name. Only required when the specified topic is 'clinics'. Use the clinic URL slug (e.g., 'salisbury-clinic', 'poole')",
+        }
       },
       required: ["topic"],
     },
