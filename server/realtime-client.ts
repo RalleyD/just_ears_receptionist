@@ -248,6 +248,42 @@ const FUNCTION_DEFINITIONS = [
   },
 ];
 
+/** 
+ * Transfer call state transitions - emergency and normal transfer routines
+ * 
+ * IDLE -> WAITING -> RESPONDED -> TRANSFERRING -> COMPLETED
+ * |________|
+ *      EMERGENCY -> TRANSFERRING -> COMPLETED
+ * 
+ * Assuming the server is single threaded, per instance, (i.e can only handle one incoming WS msg at a time)
+ * 
+ * On transcription failure:
+ *  - if transfer state is EMERGENCY || TRANSFERRING || COMPLETED: do nothing.
+ *  - else: initiate transfer, state EMERGENCY.
+ * 
+ * On transfer request:
+ *  - if transfer state EMERGENCY || TRANSFERRING || COMPLETED: do nothing.
+ *  - else initiate transfer, state WAITING.
+ * 
+ * Current state | IDLE   | WAITING   |EMERGENCY | RESPONDED | TRANSFERRING  | COMPLETED |
+ * Event         |-----------------------------------------------------------------------|
+ * transcription |        |           |          |           |               |           |
+ * failed        | EMERG  | -         | -        | -         | -             | -         |
+ *               |-----------------------------------------------------------------------|
+ * func action.  |        |           |          |           |               |           |
+ * transfer      | WAITING| -         | -        | -         | -             | -         |
+ *               |-----------------------------------------------------------------------|
+ * output added  | -      | RESPONDED | -        | -         | -             | -         |
+ *               |-----------------------------------------------------------------------|
+ * response done | -      | -         | -        | TRANSFER  | -             | -         |
+ *               |-----------------------------------------------------------------------|
+ * 
+ * functions:
+ * performTransfer(context: TransferContext) -> performs the twilio update, dial, socket close
+ * scheduleTransfer(context: TransferContext, delayMs: number) -> delays the action of performing the transfer
+ * in both transcription failed and response done cases, shall await scheduleTransfer to complete.
+*/
+
 export function handleConnection(twilioWs: WebSocket) {
   let openaiWs: WebSocket | null = null;
   let streamSid: string | null = null;
