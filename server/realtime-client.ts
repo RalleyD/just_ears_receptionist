@@ -252,38 +252,13 @@ const FUNCTION_DEFINITIONS = [
 ];
 
 /** 
- * Transfer call state transitions - emergency and normal transfer routines
+ * Transfer call state transitions.
  * 
- * IDLE -> WAITING -> RESPONDED -> TRANSFERRING -> COMPLETED
- * |________|
- *      EMERGENCY -> TRANSFERRING -> COMPLETED
- * 
- * Assuming the server is single threaded, per instance, (i.e can only handle one incoming WS msg at a time)
- * 
- * On transcription failure:
- *  - if transfer state is EMERGENCY || TRANSFERRING || COMPLETED: do nothing.
- *  - else: initiate transfer, state EMERGENCY.
- * 
- * On transfer request:
- *  - if transfer state EMERGENCY || TRANSFERRING || COMPLETED: do nothing.
- *  - else initiate transfer, state WAITING.
- * 
- * Current state | IDLE   | WAITING   |EMERGENCY | RESPONDED | TRANSFERRING  | COMPLETED |
- * Event         |-----------------------------------------------------------------------|
- * transcription |        |           |          |           |               |           |
- * failed        | EMERG  | -         | -        | -         | -             | -         |
- *               |-----------------------------------------------------------------------|
- * func action.  |        |           |          |           |               |           |
- * transfer      | WAITING| -         | -        | -         | -             | -         |
- *               |-----------------------------------------------------------------------|
- * output added  | -      | RESPONDED | -        | -         | -             | -         |
- *               |-----------------------------------------------------------------------|
- * response done | -      | -         | -        | TRANSFER  | -             | -         |
- *               |-----------------------------------------------------------------------|
+ * Binary state, either transferring or not transferring.
  * 
  * functions:
- * performTransfer(context: TransferContext) -> performs the twilio update, dial, socket close
- * scheduleTransfer(context: TransferContext, delayMs: number) -> delays the action of performing the transfer
+ * performTransfer() -> performs the twilio update, dial, socket close
+ * scheduleTransfer(delayMs: number, reason: string) -> delays the action of performing the transfer
  * in both transcription failed and response done cases, shall await scheduleTransfer to complete.
 */
 
@@ -292,7 +267,53 @@ export function handleConnection(twilioWs: WebSocket) {
   let streamSid: string | null = null;
   let twCallSid: string | null = null;
   let responseInProgress = false;
-  let transferPending: object | null = null;
+  let transferPending: boolean = false;
+  let transferInProgress: boolean = false;
+
+  function performTransfer() {
+    const twClient = twilio(
+      config.twilio.accountSid,
+      config.twilio.authToken,
+    );
+
+    const twiMl = createTwiMlTransfer(config.transfer.number);
+
+    try {
+        // update the twilio client to use the new TwiMl
+        twClient.calls(twCallSid).update({
+          twiml: twiMl,
+        });
+
+        console.log("Call transferred successfully");
+
+        // close OpenAI websocket connection to avoid token leakage
+        if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
+          openaiWs.close();
+          console.log("OpenAI WebSocket closed after transfer");
+        }
+
+        transferInProgress = false;
+      } catch (error) {
+        console.error("Error transferring call:", error);
+      }
+  }
+
+  function scheduleTransfer(delayMs: number, reason: string) {
+    // check whether we are already in a transfer state
+    if (transferInProgress) {
+      console.log(`Transfer already in progress, ignoring transfer request: ${reason}`);
+      return;
+    }
+
+    console.log(`Scheduling transfer for ${delayMs} ms: ${reason}`);
+
+    // update the transferring state
+    transferInProgress = true;
+    transferPending = false;
+    
+    setTimeout(async () => performTransfer(),
+      delayMs);
+  }
 
   // Connect to OpenAI Realtime API
   openaiWs = new WebSocket(config.openai.realtimeUrl, {
@@ -373,45 +394,15 @@ export function handleConnection(twilioWs: WebSocket) {
         case "response.done":
           console.log("Response completed");
           responseInProgress = false;
-          if (transferPending && transferPending.outputAdded) {
+          if (transferPending) {
             console.log("AI finished speaking, initiating transfer");
 
-            const twClient = twilio(
-              config.twilio.accountSid,
-              config.twilio.authToken,
-            );
-
-            const twiMl = createTwiMlTransfer(transferPending.phoneNumber);
-
-            // add a short delay to allow the AI to finish speaking
-            setTimeout(async () => {
-              try {
-                // update the twilio client to use the new TwiMl
-                twClient.calls(transferPending.callSid).update({
-                  twiml: twiMl,
-                });
-
-                console.log("Call transferred successfully");
-
-                // close OpenAI websocket connection to avoid token leakage
-                if (openaiWs && openaiWs.readyState === WebSocket.OPEN) {
-                  openaiWs.close();
-                  console.log("OpenAI WebSocket closed after transfer");
-                }
-              } catch (error) {
-                console.error("Error transferring call:", error);
-              }
-
-              transferPending = null; // clear the object
-            }, 3500);
+            await scheduleTransfer(3500, "nomal_transfer");
           }
           break;
 
         case "response.output_item.added":
           console.log("Response added");
-          if (transferPending) {
-            transferPending.outputAdded = true;
-          }
           break;
 
         case "response.output_item.done":
@@ -447,12 +438,7 @@ export function handleConnection(twilioWs: WebSocket) {
               "Transfer requested, will execute after AI finishes speaking",
             );
 
-            // store transfer details
-            transferPending = {
-              phoneNumber: result.phone_number,
-              callSid: twCallSid,
-              outputAdded: false,
-            };
+            transferPending = true;
 
             result = {
               message:
@@ -474,6 +460,17 @@ export function handleConnection(twilioWs: WebSocket) {
           // Request response generation with the function result
           openaiWs!.send(JSON.stringify({ type: "response.create" }));
           responseInProgress = true;
+          break;
+
+        case "conversation.item.input_audio_transcription.failed":
+          /* can occur for other reasons but this case handles when the OpenAI account
+             runs out of credits, we see that Robin stops speaking but without a specific error message (e.g timeout)
+             instead, we get a transcription failure if the caller tries to talk.
+             Perform an immediate call transfer.
+             TODO create a TWML to have Twilio speak the action e.g "Your call is being transferred to a member of staff,
+             apologies for the delay."
+          */
+          await scheduleTransfer(0, "Input transcription failed, transferring call immediately");
           break;
 
         case "error":
