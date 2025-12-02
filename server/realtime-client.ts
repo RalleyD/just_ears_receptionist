@@ -272,11 +272,21 @@ export function handleConnection(twilioWs: WebSocket) {
     const sessionUpdate = {
       type: "session.update",
       session: {
-        modalities: ["text", "audio"],
+        output_modalities: ["audio"],
         instructions: SYSTEM_MESSAGE,
-        voice: "ballad",
-        input_audio_format: "g711_ulaw",
-        output_audio_format: "g711_ulaw",
+        audio: {
+          input: {
+            format: {
+              type: "audio/pcmu",
+            }
+          },
+          output: {
+            format: {
+              type: "audio/pcmu",
+            },
+            voice: "ballad",
+          },
+        },
         input_audio_transcription: {
           model: "whisper-1",
         },
