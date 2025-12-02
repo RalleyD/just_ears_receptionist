@@ -287,12 +287,6 @@ export function handleConnection(twilioWs: WebSocket) {
             voice: "ballad",
           },
         },
-        turn_detection: {
-          type: "server_vad",
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500,
-        },
         tools: FUNCTION_DEFINITIONS,
         tool_choice: "auto",
         temperature: 0.6,
