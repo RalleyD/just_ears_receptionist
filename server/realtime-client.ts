@@ -262,7 +262,6 @@ export function handleConnection(twilioWs: WebSocket) {
   openaiWs = new WebSocket(config.openai.realtimeUrl, {
     headers: {
       Authorization: `Bearer ${config.openai.apiKey}`,
-      "OpenAI-Beta": "realtime=v1",
     },
   });
 
