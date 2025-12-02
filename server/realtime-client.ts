@@ -255,7 +255,6 @@ export function handleConnection(twilioWs: WebSocket) {
   let openaiWs: WebSocket | null = null;
   let streamSid: string | null = null;
   let twCallSid: string | null = null;
-  let responseInProgress = false;
   let transferPending: object | null = null;
 
   // Connect to OpenAI Realtime API
@@ -327,7 +326,6 @@ export function handleConnection(twilioWs: WebSocket) {
 
         case "input_audio_buffer.speech_started":
           console.log("User started speaking");
-          responseInProgress = false;
           break;
 
         case "input_audio_buffer.speech_stopped":
@@ -336,7 +334,6 @@ export function handleConnection(twilioWs: WebSocket) {
 
         case "response.done":
           console.log("Response completed");
-          responseInProgress = false;
           if (transferPending && transferPending.outputAdded) {
             console.log("AI finished speaking, initiating transfer");
 
@@ -382,7 +379,7 @@ export function handleConnection(twilioWs: WebSocket) {
           console.log("Response done");
           break;
 
-        case "response.audio.delta":
+        case "response.output_audio.delta":
           // Send audio back to Twilio: OpenAi -> Twilio -> Caller
           if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
             const audioPayload = {
@@ -437,7 +434,6 @@ export function handleConnection(twilioWs: WebSocket) {
 
           // Request response generation with the function result
           openaiWs!.send(JSON.stringify({ type: "response.create" }));
-          responseInProgress = true;
           break;
 
         case "error":
