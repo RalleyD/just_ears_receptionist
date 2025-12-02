@@ -316,7 +316,7 @@ export function handleConnection(twilioWs: WebSocket) {
             JSON.stringify({
               type: "response.create",
               response: {
-                modalities: ["audio", "text"],
+                output_modalities: ["audio"],
                 instructions:
                   "Greet the caller with your introduction as specified in the INTRODUCTION section of the system instructions.",
               },
@@ -522,7 +522,7 @@ function sendOpenAiResponse(openaiWs: WebSocket, instruction: string) {
     JSON.stringify({
       type: "response.create",
       response: {
-        modalities: ["audio", "text"],
+        output_modalities: ["audio"],
         instructions: instruction,
       },
     }),
