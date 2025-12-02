@@ -289,6 +289,7 @@ export function handleConnection(twilioWs: WebSocket) {
         tools: FUNCTION_DEFINITIONS,
         tool_choice: "auto",
         temperature: 0.6,
+        type: "realtime",
       },
     };
 
