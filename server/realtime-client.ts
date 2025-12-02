@@ -287,9 +287,6 @@ export function handleConnection(twilioWs: WebSocket) {
             voice: "ballad",
           },
         },
-        input_audio_transcription: {
-          model: "whisper-1",
-        },
         turn_detection: {
           type: "server_vad",
           threshold: 0.5,
