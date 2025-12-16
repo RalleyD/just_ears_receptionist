@@ -324,7 +324,7 @@ export function handleConnection(twilioWs: WebSocket) {
               response: {
                 output_modalities: ["audio"],
                 instructions:
-                  "Greet the caller with your introduction as specified in the INTRODUCTION section of the system instructions.",
+                  "Greet the caller IN ENGLISH with your introduction as specified in the GREETING section of the system instructions. The conversation must be conducted entirely in English.",
               },
             }),
           );
