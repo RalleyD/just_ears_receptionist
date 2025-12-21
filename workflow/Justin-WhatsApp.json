@@ -1,65 +1,65 @@
 {
-  "name": "Justin-WhatsApp",
+  "name": "Justin-WhatsApp-Twilio",
   "nodes": [
     {
       "parameters": {
-        "updates": [
-          "messages"
-        ],
+        "httpMethod": "POST",
+        "path": "justin-whatsapp",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "3c383e5b-0bc9-4fbf-8db2-f67d86d836fe",
-      "name": "WhatsApp Message Received",
-      "type": "n8n-nodes-base.whatsAppTrigger",
+      "name": "Twilio WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
       "position": [
         -480,
         3104
       ],
-      "webhookId": "justin-whatsapp-msgs",
-      "typeVersion": 1
+      "webhookId": "justin-whatsapp-twilio",
+      "typeVersion": 2
     },
     {
       "parameters": {
-        "rules": {
-          "values": [
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
             {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "leftValue": "={{ $json.messages[0].type }}",
-                    "rightValue": "text",
-                    "id": "e5716b46-2f13-4bf2-a331-8f8914da0b34"
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "text"
+              "id": "check-body-exists",
+              "leftValue": "={{ $json.body.Body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "check-from-whatsapp",
+              "leftValue": "={{ $json.body.From }}",
+              "rightValue": "whatsapp:",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
             }
-          ]
+          ],
+          "combinator": "and"
         },
-        "options": {
-          "fallbackOutput": "none"
-        }
+        "options": {}
       },
       "id": "016b590c-c584-4bf7-bf11-9c8cbc2899e8",
-      "name": "Filter Text Messages Only",
-      "type": "n8n-nodes-base.switch",
+      "name": "Filter Valid WhatsApp Messages",
+      "type": "n8n-nodes-base.if",
       "position": [
         -240,
         3104
       ],
-      "typeVersion": 3.2
+      "typeVersion": 2.2
     },
     {
       "parameters": {
@@ -69,25 +69,37 @@
               "id": "session-id",
               "name": "session_id",
               "type": "string",
-              "value": "={{ $json.messages?.[0]?.from || 'unknown' }}"
+              "value": "={{ $json.body.WaId || $json.body.From.replace('whatsapp:', '') || 'unknown' }}"
             },
             {
               "id": "user-message",
               "name": "user_message",
               "type": "string",
-              "value": "={{ $json.messages?.[0]?.text?.body || 'No message detected' }}"
+              "value": "={{ $json.body.Body || 'No message detected' }}"
             },
             {
               "id": "caller-number",
               "name": "caller_number",
               "type": "string",
-              "value": "={{ $json.messages?.[0]?.from || 'unknown' }}"
+              "value": "={{ $json.body.From || 'unknown' }}"
             },
             {
-              "id": "phone-number-id",
-              "name": "phone_number_id",
+              "id": "twilio-number",
+              "name": "twilio_number",
               "type": "string",
-              "value": "={{ $json.metadata.phone_number_id }}"
+              "value": "={{ $json.body.To || '' }}"
+            },
+            {
+              "id": "profile-name",
+              "name": "profile_name",
+              "type": "string",
+              "value": "={{ $json.body.ProfileName || '' }}"
+            },
+            {
+              "id": "message-sid",
+              "name": "message_sid",
+              "type": "string",
+              "value": "={{ $json.body.MessageSid || '' }}"
             }
           ]
         },
@@ -157,20 +169,74 @@
     },
     {
       "parameters": {
+        "resource": "message",
         "operation": "send",
-        "phoneNumberId": "={{ $('Prepare Agent Context').item.json.phone_number_id }}",
-        "recipientPhoneNumber": "={{ $('Prepare Agent Context').item.json.caller_number }}",
-        "textBody": "={{ $json.output }}",
-        "additionalFields": {}
+        "from": "={{ $('Prepare Agent Context').item.json.twilio_number }}",
+        "to": "={{ $('Prepare Agent Context').item.json.caller_number }}",
+        "message": "={{ $json.output }}"
       },
       "id": "3a69b341-273d-4573-b908-522f1ce744fd",
-      "name": "Send WhatsApp Response",
-      "type": "n8n-nodes-base.whatsApp",
+      "name": "Send WhatsApp via Twilio",
+      "type": "n8n-nodes-base.twilio",
       "position": [
         880,
         3104
       ],
-      "typeVersion": 1
+      "typeVersion": 1,
+      "credentials": {
+        "twilioApi": {
+          "id": "YOUR_TWILIO_CREDENTIAL_ID",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response-node",
+      "name": "Respond to Twilio",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1120,
+        3104
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response-invalid",
+      "name": "Respond Empty (Invalid)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        0,
+        3280
+      ],
+      "typeVersion": 1.1
     },
     {
       "parameters": {
@@ -549,14 +615,14 @@
     },
     {
       "parameters": {
-        "content": "## Justin WhatsApp AI Receptionist\n\n**Capabilities:**\n- Answer FAQs and service enquiries\n- Provide location information\n- Direct to phone for bookings\n\n**Cannot:**\n- Book appointments\n- Check availability\n- Process payments",
-        "height": 240,
+        "content": "## Justin WhatsApp AI Receptionist (Twilio)\n\n**Trigger:** Twilio Webhook (POST)\n**Output:** Twilio WhatsApp Message\n\n**Capabilities:**\n- Answer FAQs and service enquiries\n- Provide location information\n- Direct to phone for bookings\n\n**Cannot:**\n- Book appointments\n- Check availability\n- Process payments\n\n**Setup Required:**\n1. Configure Twilio credentials in n8n\n2. Set webhook URL in Twilio Console\n3. Update credential ID in Twilio node",
+        "height": 320,
         "width": 280
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
         -480,
-        2840
+        2780
       ],
       "typeVersion": 1,
       "id": "workflow-note"
@@ -574,26 +640,47 @@
       ],
       "typeVersion": 1,
       "id": "tools-note"
+    },
+    {
+      "parameters": {
+        "content": "## Twilio Webhook Fields\n\n**From:** `whatsapp:+44xxxxxxxxxx`\n**To:** `whatsapp:+1xxxxxxxxxx` (your Twilio number)\n**Body:** Message text\n**WaId:** WhatsApp ID (phone number)\n**ProfileName:** Sender's display name\n**MessageSid:** Unique message ID",
+        "height": 200,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        2840
+      ],
+      "typeVersion": 1,
+      "id": "twilio-fields-note"
     }
   ],
   "pinData": {},
   "connections": {
-    "WhatsApp Message Received": {
+    "Twilio WhatsApp Webhook": {
       "main": [
         [
           {
-            "node": "Filter Text Messages Only",
+            "node": "Filter Valid WhatsApp Messages",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter Text Messages Only": {
+    "Filter Valid WhatsApp Messages": {
       "main": [
         [
           {
             "node": "Prepare Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Empty (Invalid)",
             "type": "main",
             "index": 0
           }
@@ -615,7 +702,18 @@
       "main": [
         [
           {
-            "node": "Send WhatsApp Response",
+            "node": "Send WhatsApp via Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp via Twilio": {
+      "main": [
+        [
+          {
+            "node": "Respond to Twilio",
             "type": "main",
             "index": 0
           }
@@ -924,7 +1022,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "whatsapp-v1-justin",
+  "versionId": "whatsapp-v2-twilio",
   "meta": {
     "instanceId": "91e532732c7cfc18754f535ff85ff66873fe386a112e3aaac1455707112216ba"
   },
