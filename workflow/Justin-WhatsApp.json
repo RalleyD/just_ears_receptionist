@@ -8,12 +8,12 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "3c383e5b-0bc9-4fbf-8db2-f67d86d836fe",
+      "id": "a968c51e-bd26-4176-a451-66a9a8619ac8",
       "name": "Twilio WhatsApp Webhook",
       "type": "n8n-nodes-base.webhook",
       "position": [
-        -480,
-        3104
+        -1968,
+        1392
       ],
       "webhookId": "justin-whatsapp-twilio",
       "typeVersion": 2
@@ -52,12 +52,12 @@
         },
         "options": {}
       },
-      "id": "016b590c-c584-4bf7-bf11-9c8cbc2899e8",
+      "id": "f8357f0c-9d69-4832-9848-a5b7d5d44657",
       "name": "Filter Valid WhatsApp Messages",
       "type": "n8n-nodes-base.if",
       "position": [
-        -240,
-        3104
+        -1728,
+        1392
       ],
       "typeVersion": 2.2
     },
@@ -105,12 +105,12 @@
         },
         "options": {}
       },
-      "id": "ff03c2e8-a663-48b2-888c-e904a1cd5fc4",
+      "id": "176a6554-050a-4830-be72-686d890edee6",
       "name": "Prepare Agent Context",
       "type": "n8n-nodes-base.set",
       "position": [
-        0,
-        3104
+        -1488,
+        1392
       ],
       "typeVersion": 3.4
     },
@@ -123,12 +123,12 @@
           "maxIterations": 5
         }
       },
-      "id": "00bbdcdd-cc6d-4284-8678-1caa9ba19a72",
+      "id": "a0338fd0-a856-48db-8c01-6368b18d28af",
       "name": "Justin AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "position": [
-        480,
-        3104
+        -1008,
+        1392
       ],
       "typeVersion": 2.2
     },
@@ -144,48 +144,53 @@
           "temperature": 0.3
         }
       },
-      "id": "41410f78-9409-4044-8b66-907378fd3ddf",
+      "id": "49506e79-98c6-46c2-bee0-81648bd5b5e6",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "position": [
-        320,
-        3328
+        -1168,
+        1616
       ],
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "K04cGaIz0GeiTVmM",
+          "name": "OpenAi account"
+        }
+      }
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
         "sessionKey": "={{ $('Prepare Agent Context').item.json.session_id }}"
       },
-      "id": "d8302098-9661-431f-b587-862f03d89171",
+      "id": "c5d9f0c4-9f1e-4eeb-ae48-b395ccec3264",
       "name": "Conversation Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "position": [
-        480,
-        3328
+        -1008,
+        1616
       ],
       "typeVersion": 1.3
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "from": "={{ $('Prepare Agent Context').item.json.twilio_number }}",
         "to": "={{ $('Prepare Agent Context').item.json.caller_number }}",
-        "message": "={{ $json.output }}"
+        "message": "={{ $json.output }}",
+        "options": {}
       },
-      "id": "3a69b341-273d-4573-b908-522f1ce744fd",
+      "id": "9008d05b-02b8-45d7-855c-16c548d0fb47",
       "name": "Send WhatsApp via Twilio",
       "type": "n8n-nodes-base.twilio",
       "position": [
-        880,
-        3104
+        -608,
+        1392
       ],
       "typeVersion": 1,
       "credentials": {
         "twilioApi": {
-          "id": "YOUR_TWILIO_CREDENTIAL_ID",
+          "id": "M2YYaLPcpHBY2iOt",
           "name": "Twilio account"
         }
       }
@@ -205,12 +210,12 @@
           }
         }
       },
-      "id": "webhook-response-node",
+      "id": "79d99e39-554a-467b-a9fe-1accb44c7090",
       "name": "Respond to Twilio",
       "type": "n8n-nodes-base.respondToWebhook",
       "position": [
-        1120,
-        3104
+        -368,
+        1392
       ],
       "typeVersion": 1.1
     },
@@ -229,387 +234,362 @@
           }
         }
       },
-      "id": "webhook-response-invalid",
+      "id": "d144557a-6d47-44e2-ac6e-12c13c96711e",
       "name": "Respond Empty (Invalid)",
       "type": "n8n-nodes-base.respondToWebhook",
       "position": [
-        0,
-        3280
+        -1488,
+        1568
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get general information about Just Ears clinic, homepage content, and overview of services. Use when patient asks general questions about the clinic.",
-        "url": "=https://www.justears.co.uk/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/"
       },
-      "id": "d1b65390-e295-452f-81e5-cdbacb73e6f0",
+      "id": "3b81628d-a04b-45e3-a4e6-5ecdc1f61951",
       "name": "Get Homepage Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2800
+        -1248,
+        1088
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about microsuction ear wax removal service, procedure, benefits, and what to expect. Use when patient asks about ear wax removal or microsuction.",
-        "url": "=https://www.justears.co.uk/services-products/microsuction/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/microsuction/"
       },
-      "id": "a962a8ac-9acb-4ed2-a31d-7d94c0e6157a",
+      "id": "c005fc49-3055-4ba6-9f1a-9a979ac4a9c7",
       "name": "Get Microsuction Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2800
+        -1088,
+        1088
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get information about ear wax check service. Use when patient is unsure if they have blocked ears or wax buildup and wants to check.",
-        "url": "=https://www.justears.co.uk/services-products/wax-check/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/wax-check/"
       },
-      "id": "6a00c8e7-8cee-4d2f-b94a-88fbb54ded46",
+      "id": "fa250dcc-95ee-4c15-9460-ed61aef25fac",
       "name": "Get Wax Check Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2800
+        -928,
+        1088
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get information about microsuction for young persons aged 12-17. Use when patient asks about ear wax removal for children or teenagers.",
-        "url": "=https://www.justears.co.uk/services-products/12-17-year-olds-microsuction/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/12-17-year-olds-microsuction/"
       },
-      "id": "272b9d9a-5256-4234-9c8e-fa6f4a242e61",
+      "id": "d7c895aa-5ba6-4a8f-ba16-b4c6432b0354",
       "name": "Get Young Persons Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2800
+        -768,
+        1088
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get information about emergency or same-day microsuction appointments. Use when patient mentions urgency or same-day needs.",
-        "url": "=https://www.justears.co.uk/services-products/emergency-same-day-microsuction/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/emergency-same-day-microsuction/"
       },
-      "id": "5450024f-560f-4bab-bbc0-88d64d9ee5e3",
+      "id": "c07656c8-17a5-4b28-bc3a-4330371acd42",
       "name": "Get Emergency Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2640
+        -1248,
+        928
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get information about hearing loss and hearing aids services. Use when patient asks about hearing tests, hearing aids, or hearing loss.",
-        "url": "=https://www.justears.co.uk/services-products/hearing-loss-and-hearing-aids/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/hearing-loss-and-hearing-aids/"
       },
-      "id": "d6a315e4-d848-47da-b397-c52afb5fd68e",
+      "id": "3d66f2e3-85a9-415d-bbfc-4166ec97b1d2",
       "name": "Get Hearing Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2640
+        -1088,
+        928
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get information about custom made ear plugs and ear moulds. Use when patient asks about ear plugs, swimming protection, or custom ear protection.",
-        "url": "=https://www.justears.co.uk/services-products/custom-made-ear-plugs/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/custom-made-ear-plugs/"
       },
-      "id": "9bf2806b-a2c7-4716-9607-8fb787292a39",
+      "id": "0814d091-0545-43b8-9b67-bde8512fd32f",
       "name": "Get Ear Plugs Info",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2640
+        -928,
+        928
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get general ear care advice and guidance. Use when patient asks general questions about ear care, ear health, or ear maintenance.",
-        "url": "=https://www.justears.co.uk/services-products/ear-care-advice/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/services-products/ear-care-advice/"
       },
-      "id": "5ed16879-5e0f-4392-b6da-ae1d2de625a3",
+      "id": "dd488020-9d75-4ba2-85f4-b47317799a3e",
       "name": "Get Ear Care Advice",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2640
+        -768,
+        928
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get frequently asked questions and answers about Just Ears services. Use when patient asks common questions about procedures, costs, what to expect, cancellations, or general service queries.",
-        "url": "=https://www.justears.co.uk/faqs/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/faqs/"
       },
-      "id": "77a7406b-cea8-4c48-b3e6-5a31121522cb",
+      "id": "ebdbc170-f7ef-44a0-949f-d9be76c1c7c5",
       "name": "Get FAQs",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2480
+        -1248,
+        768
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get the list of all clinic locations. Use when patient asks about available locations or wants to know all clinics.",
-        "url": "=https://www.justears.co.uk/our-clinics/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/our-clinics/"
       },
-      "id": "clinic-locations-tool",
+      "id": "1e503dac-4318-4595-968b-bba85fe09164",
       "name": "Get All Clinic Locations",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2480
+        -1088,
+        768
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Winchester clinic including address, directions, and parking. Use when patient asks specifically about Winchester clinic.",
-        "url": "=https://www.justears.co.uk/clinic/winchester-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/winchester-clinic/"
       },
-      "id": "winchester-clinic-tool",
+      "id": "17b9f26c-a4dc-44e2-8534-6ce86dec41f4",
       "name": "Get Winchester Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2480
+        -928,
+        768
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Bursledon (Southampton) clinic including address, directions, and parking. Use when patient asks specifically about Bursledon or Southampton clinic.",
-        "url": "=https://www.justears.co.uk/clinic/bursledon/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/bursledon/"
       },
-      "id": "bursledon-clinic-tool",
+      "id": "48136b3f-e285-4d64-99ac-320e403f8bd4",
       "name": "Get Bursledon Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2480
+        -768,
+        768
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Cosham (Portsmouth) clinic including address, directions, and parking. Use when patient asks specifically about Cosham or Portsmouth clinic.",
-        "url": "=https://www.justears.co.uk/clinic/cosham/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/cosham/"
       },
-      "id": "cosham-clinic-tool",
+      "id": "4017501b-752d-48b3-83ef-7fe413dd6f50",
       "name": "Get Cosham Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2320
+        -1248,
+        608
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Chichester clinic including address, directions, and parking. Use when patient asks specifically about Chichester clinic.",
-        "url": "=https://www.justears.co.uk/clinic/chichester-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/chichester-clinic/"
       },
-      "id": "chichester-clinic-tool",
+      "id": "59faf1aa-1d27-4da2-947b-89316b8dae29",
       "name": "Get Chichester Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2320
+        -1088,
+        608
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Guildford clinic including address, directions, and parking. Use when patient asks specifically about Guildford clinic.",
-        "url": "=https://www.justears.co.uk/clinic/guildford-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/guildford-clinic/"
       },
-      "id": "guildford-clinic-tool",
+      "id": "06143781-fa1f-4324-a499-ae9419e19018",
       "name": "Get Guildford Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2320
+        -928,
+        608
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Poole clinic including address, directions, and parking. Use when patient asks specifically about Poole or Bournemouth area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/poole/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/poole/"
       },
-      "id": "poole-clinic-tool",
+      "id": "99931578-5042-4419-8607-f937569e0e91",
       "name": "Get Poole Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2320
+        -768,
+        608
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Emsworth clinic including address, directions, and parking. Use when patient asks specifically about Emsworth clinic.",
-        "url": "=https://www.justears.co.uk/clinic/emsworth-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/emsworth-clinic/"
       },
-      "id": "emsworth-clinic-tool",
+      "id": "9355ea8c-f942-4cdc-8073-b56e5890e076",
       "name": "Get Emsworth Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2160
+        -1248,
+        448
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Gosport clinic including address, directions, and parking. Use when patient asks specifically about Gosport clinic.",
-        "url": "=https://www.justears.co.uk/clinic/gosport-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/gosport-clinic/"
       },
-      "id": "gosport-clinic-tool",
+      "id": "6b405e9c-0e12-4220-9483-db41882c7602",
       "name": "Get Gosport Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2160
+        -1088,
+        448
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Horndean clinic including address, directions, and parking. Use when patient asks specifically about Horndean, Waterlooville, or Havant area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/horndean-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/horndean-clinic/"
       },
-      "id": "horndean-clinic-tool",
+      "id": "afbf5632-c5b9-4817-9900-e9f29318a914",
       "name": "Get Horndean Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2160
+        -928,
+        448
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Port Solent clinic including address, directions, and parking. Use when patient asks specifically about Port Solent or Fareham area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/portssolent-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/portssolent-clinic/"
       },
-      "id": "portsolent-clinic-tool",
+      "id": "5d27d8b5-b4ce-4fe9-98f2-6509dbee44ce",
       "name": "Get Port Solent Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2160
+        -768,
+        448
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Bordon clinic including address, directions, and parking. Use when patient asks specifically about Bordon or Alton area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/bordon/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/bordon/"
       },
-      "id": "bordon-clinic-tool",
+      "id": "77bcedf0-60a7-4476-9ee9-1aa9b9b08034",
       "name": "Get Bordon Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        2000
+        -1248,
+        288
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Ringwood clinic including address, directions, and parking. Use when patient asks specifically about Ringwood clinic.",
-        "url": "=https://www.justears.co.uk/clinic/ringwood-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/ringwood-clinic/"
       },
-      "id": "ringwood-clinic-tool",
+      "id": "9e28eeed-3beb-490e-8bb9-a0bd58e577d5",
       "name": "Get Ringwood Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        400,
-        2000
+        -1088,
+        288
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Salisbury clinic including address, directions, and parking. Use when patient asks specifically about Salisbury or Wiltshire area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/salisbury-clinic/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/salisbury-clinic/"
       },
-      "id": "salisbury-clinic-tool",
+      "id": "3f5c9488-36fb-41c3-b7bd-f81492eee1b7",
       "name": "Get Salisbury Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        560,
-        2000
+        -928,
+        288
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Tonbridge clinic including address, directions, and parking. Use when patient asks specifically about Tonbridge, Tunbridge Wells, or Kent area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/tonbridge/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/tonbridge/"
       },
-      "id": "tonbridge-clinic-tool",
+      "id": "12c55b00-c42b-44c2-8407-1c9c7bc79349",
       "name": "Get Tonbridge Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        720,
-        2000
+        -768,
+        288
       ],
       "typeVersion": 1.1
     },
     {
       "parameters": {
         "toolDescription": "=Get detailed information about the Petts Wood (Orpington) clinic including address, directions, and parking. Use when patient asks specifically about Petts Wood, Orpington, Bromley, or Chislehurst area clinic.",
-        "url": "=https://www.justears.co.uk/clinic/orpington/",
-        "options": {}
+        "url": "=https://www.justears.co.uk/clinic/orpington/"
       },
-      "id": "pettswood-clinic-tool",
+      "id": "e087677a-8df2-40e7-8fb7-af15691e04d8",
       "name": "Get Petts Wood Clinic",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "position": [
-        240,
-        1840
+        -1248,
+        128
       ],
       "typeVersion": 1.1
     },
@@ -621,11 +601,12 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -480,
-        2780
+        -1968,
+        1072
       ],
       "typeVersion": 1,
-      "id": "workflow-note"
+      "id": "6bdfa2cf-169a-481a-bb23-b20bf1e0559b",
+      "name": "Sticky Note"
     },
     {
       "parameters": {
@@ -635,11 +616,12 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        240,
-        1640
+        -1248,
+        -80
       ],
       "typeVersion": 1,
-      "id": "tools-note"
+      "id": "6a957221-ee20-4824-90ab-adeee258567d",
+      "name": "Sticky Note1"
     },
     {
       "parameters": {
@@ -649,11 +631,12 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -160,
-        2840
+        -1648,
+        1120
       ],
       "typeVersion": 1,
-      "id": "twilio-fields-note"
+      "id": "b438cc07-764f-4fe0-a818-12fb88fa5982",
+      "name": "Sticky Note2"
     }
   ],
   "pinData": {},
@@ -1022,8 +1005,9 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "whatsapp-v2-twilio",
+  "versionId": "3accde1c-e808-44fe-bdd4-b61c2cf5a28c",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "91e532732c7cfc18754f535ff85ff66873fe386a112e3aaac1455707112216ba"
   },
   "id": "2BT8ow54x5wmCWEB",
