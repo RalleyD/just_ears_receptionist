@@ -102,6 +102,25 @@ Server will be available on port 5000 (or PORT environment variable).
 - Connected Twilio voice streams with bidirectional audio
 - Implemented N8N webhook integrations for appointment management
 
+
+## Justin WhatsApp Messaging
+
+The key differences from the voice assistant
+
+| Feature | Voice | WhatsApp |
+|----------------------------|
+| Bookings | Transfers to staff | Provides mainline number |
+| Calendar | Not implemented | Not implemented |
+| Voice    | Real-time audio | Text only       |
+| Transfer | To staff        | Provides contact info       |
+
+### N8N Workflow
+
+1. Website scraping - including each clinic page.
+2. Location information - addresses for all clinics; postcode area mapping.
+3. Agent - System prompt adapted from Justin-voice; LangChain agent + OpenAI model; Per-patient conversation memory.
+4. Access - uses same OpenAI and Twilio access tokens as used in Justin-voice.
+
 ## Cloudflare worker
 
 App:

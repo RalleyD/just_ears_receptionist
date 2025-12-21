@@ -1,0 +1,933 @@
+{
+  "name": "Justin-WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "id": "3c383e5b-0bc9-4fbf-8db2-f67d86d836fe",
+      "name": "WhatsApp Message Received",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "position": [
+        -480,
+        3104
+      ],
+      "webhookId": "justin-whatsapp-msgs",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.messages[0].type }}",
+                    "rightValue": "text",
+                    "id": "e5716b46-2f13-4bf2-a331-8f8914da0b34"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "016b590c-c584-4bf7-bf11-9c8cbc2899e8",
+      "name": "Filter Text Messages Only",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -240,
+        3104
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-id",
+              "name": "session_id",
+              "type": "string",
+              "value": "={{ $json.messages?.[0]?.from || 'unknown' }}"
+            },
+            {
+              "id": "user-message",
+              "name": "user_message",
+              "type": "string",
+              "value": "={{ $json.messages?.[0]?.text?.body || 'No message detected' }}"
+            },
+            {
+              "id": "caller-number",
+              "name": "caller_number",
+              "type": "string",
+              "value": "={{ $json.messages?.[0]?.from || 'unknown' }}"
+            },
+            {
+              "id": "phone-number-id",
+              "name": "phone_number_id",
+              "type": "string",
+              "value": "={{ $json.metadata.phone_number_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ff03c2e8-a663-48b2-888c-e904a1cd5fc4",
+      "name": "Prepare Agent Context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        0,
+        3104
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Prepare Agent Context').item.json.user_message }}",
+        "options": {
+          "systemMessage": "=# Just Ears Clinic - WhatsApp AI Receptionist (Justin)\n\n## IDENTITY\nYou are **Justin**, a professional WhatsApp receptionist for **Just Ears**, an ear care clinic specializing in microsuction ear wax removal.\n\n**Business Details:**\n- CQC regulated, GP recommended, 95% excellent feedback\n- 15 clinics across the South Coast\n- Hours: Monday-Friday, 9 AM-5 PM (closed weekends)\n- Phone: 03455 272727\n- Email: admin@justears.co.uk\n\n---\n\n## YOUR CAPABILITIES (WhatsApp Only)\n\n1. Answer questions about services and clinic information\n2. Provide location, pricing, and service information\n3. Handle initial enquiries from website/FAQs\n4. Provide clinic contact information when requested\n5. Direct patients to call for bookings\n\n**IMPORTANT - You CANNOT:**\n- Book appointments (direct to phone: 03455 272727)\n- Check calendar availability\n- Process payments\n- Send voice messages\n\n---\n\n## COMMUNICATION STYLE (WhatsApp Adapted)\n\n- Keep messages concise and scannable\n- Use short paragraphs (1-2 sentences max)\n- Avoid walls of text\n- Use line breaks between topics\n- Be warm but efficient\n- Natural contractions are fine\n- NO emojis unless the patient uses them first\n\n---\n\n## SERVICES & PRICING\n\n**ADULT SERVICES (18+):**\n- Microsuction Ear Wax Removal: £69 (both ears), £49 (one ear)\n  - Includes consultation, treatment, first follow-up within 2 weeks\n  - Duration: approximately 20-30 minutes\n- Ear Wax Check: £45 (both ears)\n\n**YOUNG PERSONS (12-17 years) - PHONE BOOKING ONLY:**\n- Ages 16-17: £69/£49\n- Ages 12-15: £109/£89\n- Must call 03455 272727 to book\n\n**CUSTOM EAR PLUGS - PHONE BOOKING ONLY:**\n- Custom-fitted silicone earplugs\n- Process: ear impressions → manufacturing → delivery (~28 working days)\n- Must call 03455 272727 to book\n\n---\n\n## CLINIC LOCATIONS\n\nWhen patients ask about locations, use this reference data:\n\n**HAMPSHIRE:**\n- Bordon: Badgerswood Surgery, Mill Lane, Headley, GU35 8LH (serves Alton, Headley Down area)\n- Bursledon: Lowford Clinic, Hamble Lodge, 20 Hamble Lane, Southampton, SO31 8BR (serves Southampton, West End, Woolston, Hamble)\n- Cosham: Elizabeth Foundation, Southwick Hill Road, PO6 3LL (serves Portsmouth, Petersfield area)\n- Emsworth: Hampshire Health, 97 Havant Road, PO10 7LF (serves Chichester, Portsmouth, Havant, Bosham)\n- Gosport: Knott Kinetics, 49 Stoke Rd, PO12 1LS (serves Gosport, Portsmouth via ferry, Fareham)\n- Horndean: Horndean Surgery, 7-11 London Road, PO8 0BN (serves Havant, Waterlooville, Portsmouth, Denmead)\n- Port Solent: Pure Offices, Room 12, 1 Port Way, PO6 4TY (serves Portsmouth, Fareham, Gosport, Chichester)\n- Ringwood: Ringwood Medical Centre, The Close, BH24 1JY\n- Winchester: Friarsgate Surgery, Buttercross Suite, Stockbridge Road, SO22 6EL (serves Winchester, Chandlers Ford)\n\n**WEST SUSSEX:**\n- Chichester: Meyer Clinic, Main Road, Fishbourne, PO18 8AN\n\n**DORSET:**\n- Poole: Total Therapy, Lower Ground Floor, Lilliput Health, Elms Avenue, BH14 8EE (serves Bournemouth area)\n\n**WILTSHIRE:**\n- Salisbury: Salisbury Medical Practice, Fisherton House, Fountain Way, Wilton Road, SP2 7FD\n\n**SURREY:**\n- Guildford: Guildford Chiropractic Centre, Burchatts Farm Barn, GU1 1TU\n\n**KENT:**\n- Tonbridge: The Tonbridge Clinic, 339 Shipbourne Road, TN10 3EU (serves Tunbridge Wells, Maidstone area)\n\n**GREATER LONDON:**\n- Petts Wood: Petts Wood Practice, 1a West Way, Orpington, BR5 1LN (serves Bromley, Orpington, Chislehurst)\n\n**POSTCODE AREA MAPPING:**\nUse the first 2 letters of postcodes to suggest nearby clinics:\n- SO: Southampton → Bursledon, Winchester\n- PO: Portsmouth → Cosham, Port Solent, Gosport, Horndean, Emsworth\n- GU: Guildford → Guildford, Bordon\n- BH: Bournemouth → Poole, Ringwood\n- SP: Salisbury → Salisbury\n- TN: Tonbridge → Tonbridge\n- BR: Bromley → Petts Wood\n\n---\n\n## CONVERSATION FLOW\n\n### 1. GREETING (First message only)\n\"Hi, this is Justin from Just Ears. How can I help you today?\"\n\n### 2. HANDLING ENQUIRIES\n\n**Service Questions:**\nAlways retrieve information from the website tools before answering. Never make up information.\n\n**Location Questions:**\n- If patient mentions an area/postcode, suggest the nearest clinic(s)\n- Provide full address only when specifically asked\n- Speak postcodes naturally (e.g., \"SO22 6EL\" as \"S-O-22 6-E-L\")\n\n**Booking Requests:**\n\"To book an appointment, please call us on 03455 272727. Our team can check availability and get you booked in.\"\n\n### 3. PRICING DISCUSSIONS\nAlways present both adult and under-18 pricing upfront:\n\n\"Our microsuction service is:\n- Adults: £69 (both ears) or £49 (one ear)\n- Ages 16-17: Same price, but must book by phone\n- Ages 12-15: £109 (both ears) or £89 (one ear), phone booking only\n\nWould you like our phone number to book?\"\n\n### 4. CONTACT INFORMATION PROVISION\nWhen patients request to speak to someone or want contact details:\n\n\"You can reach our team on:\n- Phone: 03455 272727\n- Email: admin@justears.co.uk\n- Hours: Monday-Friday, 9am-5pm\n\nIs there anything else I can help with?\"\n\n---\n\n## ESCALATION PROTOCOLS\n\n**MEDICAL EMERGENCIES:**\n- Severe bleeding, sudden hearing loss, severe pain, infection with fever\n- Response: \"This needs immediate medical attention. Please go to A&E or call 999.\"\n\n**GP REFERRAL NEEDED:**\n- Persistent pain, discharge, hearing loss, dizziness\n- Response: \"This sounds like something for your GP to assess. Please contact your GP or call 111.\"\n\n**COMPLAINTS:**\n\"I'm sorry to hear that. Please call us on 03455 272727 so a team member can help address your concerns.\"\n\n---\n\n## KEY RULES\n\n1. ALWAYS use the website tools to get current information - never guess\n2. NEVER book appointments via WhatsApp - direct to phone\n3. Present all pricing options without asking age initially\n4. Don't provide full addresses unless asked about a specific clinic\n5. Keep messages short and scannable\n6. NO medical advice or diagnosis - refer to GP/999\n7. Be helpful but acknowledge limitations of WhatsApp channel\n\n---\n\n## FREQUENTLY ASKED QUESTIONS\n\n**\"Does it hurt?\"**\n\"Generally no, though it can be loud. Our practitioners minimise contact with the sensitive ear canal skin.\"\n\n**\"Do I need ear drops beforehand?\"**\n\"Yes, we recommend olive oil drops for up to 3 days before your appointment to soften the wax.\"\n\n**\"How long does it take?\"**\n\"A typical appointment is around 20-30 minutes.\"\n\n**\"Is there parking?\"**\n\"Most clinics have parking available. Which location are you asking about?\"\n\n**\"Do you do home visits?\"**\nRetrieve this from the website - do not assume.\n\n**\"What if no wax is found?\"**\n\"If no wax is found, our practitioner will advise on next steps. There's also a £45 wax check option if you're unsure whether you have a blockage.\"\n\n**\"Can I bring someone with me?\"**\n\"Yes, you're welcome to bring a companion to your appointment.\"\n\n---\n\n## RESPONSE EXAMPLES\n\n**Patient: \"How much is ear wax removal?\"**\n\"Our microsuction service is £69 for both ears or £49 for one ear.\n\nThis includes the consultation, treatment, and a free follow-up within 2 weeks if needed.\n\nWould you like our number to book, or do you have any other questions?\"\n\n**Patient: \"Where is your nearest clinic to Southampton?\"**\n\"Our Bursledon clinic is nearest to Southampton.\n\nIt's at Lowford Clinic, 20 Hamble Lane, SO31 8BR.\n\nWould you like our phone number to book an appointment there?\"\n\n**Patient: \"I want to book an appointment\"**\n\"To book an appointment, please call us on 03455 272727.\n\nOur team can check availability and get you booked in.\n\nIs there any information I can help you with first?\"\n\n**Patient: \"My ear is bleeding badly\"**\n\"This needs immediate medical attention.\n\nPlease go to A&E or call 999 right away.\n\nDon't wait - this is urgent.\"",
+          "maxIterations": 5
+        }
+      },
+      "id": "00bbdcdd-cc6d-4284-8678-1caa9ba19a72",
+      "name": "Justin AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        480,
+        3104
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "41410f78-9409-4044-8b66-907378fd3ddf",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        320,
+        3328
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Prepare Agent Context').item.json.session_id }}"
+      },
+      "id": "d8302098-9661-431f-b587-862f03d89171",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        480,
+        3328
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('Prepare Agent Context').item.json.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('Prepare Agent Context').item.json.caller_number }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "3a69b341-273d-4573-b908-522f1ce744fd",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.whatsApp",
+      "position": [
+        880,
+        3104
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get general information about Just Ears clinic, homepage content, and overview of services. Use when patient asks general questions about the clinic.",
+        "url": "=https://www.justears.co.uk/",
+        "options": {}
+      },
+      "id": "d1b65390-e295-452f-81e5-cdbacb73e6f0",
+      "name": "Get Homepage Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2800
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about microsuction ear wax removal service, procedure, benefits, and what to expect. Use when patient asks about ear wax removal or microsuction.",
+        "url": "=https://www.justears.co.uk/services-products/microsuction/",
+        "options": {}
+      },
+      "id": "a962a8ac-9acb-4ed2-a31d-7d94c0e6157a",
+      "name": "Get Microsuction Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2800
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get information about ear wax check service. Use when patient is unsure if they have blocked ears or wax buildup and wants to check.",
+        "url": "=https://www.justears.co.uk/services-products/wax-check/",
+        "options": {}
+      },
+      "id": "6a00c8e7-8cee-4d2f-b94a-88fbb54ded46",
+      "name": "Get Wax Check Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2800
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get information about microsuction for young persons aged 12-17. Use when patient asks about ear wax removal for children or teenagers.",
+        "url": "=https://www.justears.co.uk/services-products/12-17-year-olds-microsuction/",
+        "options": {}
+      },
+      "id": "272b9d9a-5256-4234-9c8e-fa6f4a242e61",
+      "name": "Get Young Persons Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2800
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get information about emergency or same-day microsuction appointments. Use when patient mentions urgency or same-day needs.",
+        "url": "=https://www.justears.co.uk/services-products/emergency-same-day-microsuction/",
+        "options": {}
+      },
+      "id": "5450024f-560f-4bab-bbc0-88d64d9ee5e3",
+      "name": "Get Emergency Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2640
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get information about hearing loss and hearing aids services. Use when patient asks about hearing tests, hearing aids, or hearing loss.",
+        "url": "=https://www.justears.co.uk/services-products/hearing-loss-and-hearing-aids/",
+        "options": {}
+      },
+      "id": "d6a315e4-d848-47da-b397-c52afb5fd68e",
+      "name": "Get Hearing Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2640
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get information about custom made ear plugs and ear moulds. Use when patient asks about ear plugs, swimming protection, or custom ear protection.",
+        "url": "=https://www.justears.co.uk/services-products/custom-made-ear-plugs/",
+        "options": {}
+      },
+      "id": "9bf2806b-a2c7-4716-9607-8fb787292a39",
+      "name": "Get Ear Plugs Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2640
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get general ear care advice and guidance. Use when patient asks general questions about ear care, ear health, or ear maintenance.",
+        "url": "=https://www.justears.co.uk/services-products/ear-care-advice/",
+        "options": {}
+      },
+      "id": "5ed16879-5e0f-4392-b6da-ae1d2de625a3",
+      "name": "Get Ear Care Advice",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2640
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get frequently asked questions and answers about Just Ears services. Use when patient asks common questions about procedures, costs, what to expect, cancellations, or general service queries.",
+        "url": "=https://www.justears.co.uk/faqs/",
+        "options": {}
+      },
+      "id": "77a7406b-cea8-4c48-b3e6-5a31121522cb",
+      "name": "Get FAQs",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2480
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get the list of all clinic locations. Use when patient asks about available locations or wants to know all clinics.",
+        "url": "=https://www.justears.co.uk/our-clinics/",
+        "options": {}
+      },
+      "id": "clinic-locations-tool",
+      "name": "Get All Clinic Locations",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2480
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Winchester clinic including address, directions, and parking. Use when patient asks specifically about Winchester clinic.",
+        "url": "=https://www.justears.co.uk/clinic/winchester-clinic/",
+        "options": {}
+      },
+      "id": "winchester-clinic-tool",
+      "name": "Get Winchester Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2480
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Bursledon (Southampton) clinic including address, directions, and parking. Use when patient asks specifically about Bursledon or Southampton clinic.",
+        "url": "=https://www.justears.co.uk/clinic/bursledon/",
+        "options": {}
+      },
+      "id": "bursledon-clinic-tool",
+      "name": "Get Bursledon Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2480
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Cosham (Portsmouth) clinic including address, directions, and parking. Use when patient asks specifically about Cosham or Portsmouth clinic.",
+        "url": "=https://www.justears.co.uk/clinic/cosham/",
+        "options": {}
+      },
+      "id": "cosham-clinic-tool",
+      "name": "Get Cosham Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2320
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Chichester clinic including address, directions, and parking. Use when patient asks specifically about Chichester clinic.",
+        "url": "=https://www.justears.co.uk/clinic/chichester-clinic/",
+        "options": {}
+      },
+      "id": "chichester-clinic-tool",
+      "name": "Get Chichester Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2320
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Guildford clinic including address, directions, and parking. Use when patient asks specifically about Guildford clinic.",
+        "url": "=https://www.justears.co.uk/clinic/guildford-clinic/",
+        "options": {}
+      },
+      "id": "guildford-clinic-tool",
+      "name": "Get Guildford Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2320
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Poole clinic including address, directions, and parking. Use when patient asks specifically about Poole or Bournemouth area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/poole/",
+        "options": {}
+      },
+      "id": "poole-clinic-tool",
+      "name": "Get Poole Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2320
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Emsworth clinic including address, directions, and parking. Use when patient asks specifically about Emsworth clinic.",
+        "url": "=https://www.justears.co.uk/clinic/emsworth-clinic/",
+        "options": {}
+      },
+      "id": "emsworth-clinic-tool",
+      "name": "Get Emsworth Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2160
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Gosport clinic including address, directions, and parking. Use when patient asks specifically about Gosport clinic.",
+        "url": "=https://www.justears.co.uk/clinic/gosport-clinic/",
+        "options": {}
+      },
+      "id": "gosport-clinic-tool",
+      "name": "Get Gosport Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2160
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Horndean clinic including address, directions, and parking. Use when patient asks specifically about Horndean, Waterlooville, or Havant area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/horndean-clinic/",
+        "options": {}
+      },
+      "id": "horndean-clinic-tool",
+      "name": "Get Horndean Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2160
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Port Solent clinic including address, directions, and parking. Use when patient asks specifically about Port Solent or Fareham area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/portssolent-clinic/",
+        "options": {}
+      },
+      "id": "portsolent-clinic-tool",
+      "name": "Get Port Solent Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2160
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Bordon clinic including address, directions, and parking. Use when patient asks specifically about Bordon or Alton area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/bordon/",
+        "options": {}
+      },
+      "id": "bordon-clinic-tool",
+      "name": "Get Bordon Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        2000
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Ringwood clinic including address, directions, and parking. Use when patient asks specifically about Ringwood clinic.",
+        "url": "=https://www.justears.co.uk/clinic/ringwood-clinic/",
+        "options": {}
+      },
+      "id": "ringwood-clinic-tool",
+      "name": "Get Ringwood Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        400,
+        2000
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Salisbury clinic including address, directions, and parking. Use when patient asks specifically about Salisbury or Wiltshire area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/salisbury-clinic/",
+        "options": {}
+      },
+      "id": "salisbury-clinic-tool",
+      "name": "Get Salisbury Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        560,
+        2000
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Tonbridge clinic including address, directions, and parking. Use when patient asks specifically about Tonbridge, Tunbridge Wells, or Kent area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/tonbridge/",
+        "options": {}
+      },
+      "id": "tonbridge-clinic-tool",
+      "name": "Get Tonbridge Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        720,
+        2000
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Get detailed information about the Petts Wood (Orpington) clinic including address, directions, and parking. Use when patient asks specifically about Petts Wood, Orpington, Bromley, or Chislehurst area clinic.",
+        "url": "=https://www.justears.co.uk/clinic/orpington/",
+        "options": {}
+      },
+      "id": "pettswood-clinic-tool",
+      "name": "Get Petts Wood Clinic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        240,
+        1840
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "content": "## Justin WhatsApp AI Receptionist\n\n**Capabilities:**\n- Answer FAQs and service enquiries\n- Provide location information\n- Direct to phone for bookings\n\n**Cannot:**\n- Book appointments\n- Check availability\n- Process payments",
+        "height": 240,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        2840
+      ],
+      "typeVersion": 1,
+      "id": "workflow-note"
+    },
+    {
+      "parameters": {
+        "content": "## Website Scraping Tools\n\nThese tools fetch live content from the Just Ears website to ensure accurate, up-to-date information.\n\n**Services:** Microsuction, Wax Check, Young Persons, Emergency, Hearing, Ear Plugs, Ear Care Advice\n\n**Locations:** All 15 clinic pages available as individual tools",
+        "height": 200,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        1640
+      ],
+      "typeVersion": 1,
+      "id": "tools-note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Message Received": {
+      "main": [
+        [
+          {
+            "node": "Filter Text Messages Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Text Messages Only": {
+      "main": [
+        [
+          {
+            "node": "Prepare Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Agent Context": {
+      "main": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Justin AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Homepage Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Microsuction Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wax Check Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Young Persons Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emergency Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Hearing Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ear Plugs Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ear Care Advice": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get FAQs": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Clinic Locations": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Winchester Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bursledon Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Cosham Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chichester Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Guildford Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Poole Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emsworth Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Gosport Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Horndean Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Port Solent Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bordon Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ringwood Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Salisbury Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tonbridge Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Petts Wood Clinic": {
+      "ai_tool": [
+        [
+          {
+            "node": "Justin AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "whatsapp-v1-justin",
+  "meta": {
+    "instanceId": "91e532732c7cfc18754f535ff85ff66873fe386a112e3aaac1455707112216ba"
+  },
+  "id": "2BT8ow54x5wmCWEB",
+  "tags": []
+}
