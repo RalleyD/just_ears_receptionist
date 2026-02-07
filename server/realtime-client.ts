@@ -171,10 +171,12 @@ const FUNCTION_DEFINITIONS = [
 ];
 
 export function handleConnection(twilioWs: WebSocket) {
+  // various connection state variables
   let openaiWs: WebSocket | null = null;
   let streamSid: string | null = null;
   let twCallSid: string | null = null;
   let transferPending: object | null = null;
+  let caller_number: string | null = null;
 
   // Connect to OpenAI Realtime API
   openaiWs = new WebSocket(config.openai.realtimeUrl, {
@@ -261,7 +263,9 @@ export function handleConnection(twilioWs: WebSocket) {
               config.twilio.authToken,
             );
 
-            const twiMl = createTwiMlTransfer(transferPending.phoneNumber);
+            const twiMl = createTwiMlTransfer(transferPending.phoneNumber,
+              caller_number ?? undefined  // nullish coalescing converts null to undefined, leaving strings untouched
+            );
 
             // add a short delay to allow the AI to finish speaking
             setTimeout(async () => {
@@ -387,9 +391,12 @@ export function handleConnection(twilioWs: WebSocket) {
         case "start":
           streamSid = msg.start.streamSid;
           twCallSid = msg.start.callSid;
+          // see twilio-handler.ts for custom parameter definition
+          caller_number = msg.start.customParameters?.caller_id || null;
 
           console.log("Twilio stream started:", streamSid);
-          console.log("Twilio call SID: ", twCallSid);
+          console.log("Twilio call SID:", twCallSid);
+          console.log("Twilio custom param, caller ID:", caller_number);
           break;
 
         case "media":

@@ -12,9 +12,17 @@ export function handleIncomingCall(req: Request, res: Response) {
 
   // Connect to media stream
   const connect = response.connect();
-  connect.stream({
+  let stream = connect.stream({
     url: `wss://${req.headers.host}/media-stream`,
   });
+  /* 
+    utilise Twilio's stream custom parameters to pass
+    the callerID to the websocket stream, as TwiML.
+  */
+  stream.parameter({
+      name: "caller_id",
+      value: req.body.From || ""
+  })
 
   res.type("text/xml");
   res.send(response.toString());
@@ -25,13 +33,17 @@ export function handleMediaStream(req: Request, res: Response) {
   res.sendStatus(200);
 }
 
-export function createTwiMlTransfer(phone_number: string) {
+export function createTwiMlTransfer(phone_number: string, caller_number?: string) {
   console.log("Transfer function called");
+
+  // check the number exists and is valid i.e E.164 format.
+  // wrap in Boolean, in case caller number is 'undefined', prevents returning 'undefined' type.
+  let call_number_valid: boolean = Boolean(caller_number && caller_number.startsWith("+"));
 
   const response = new VoiceResponse();
   const dial = response.dial({
     answerOnBridge: true, // only connect when the other party answers.
-    callerId: config.twilio.number!, // show the original Twilio number as caller ID
+    callerId: call_number_valid ? caller_number : config.twilio.number!,
   });
 
   dial.number(phone_number);
