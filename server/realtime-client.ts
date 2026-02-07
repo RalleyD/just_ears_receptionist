@@ -36,10 +36,10 @@ CONVERSATION FLOW
 2. INITIAL INQUIRY PROCESS
 BEFORE considering a call transfer, ALWAYS:
     1. Listen to the caller's concern 
-    2. Ask clarifying questions to understand their needs 
-    3. Check if you can help with available functions 
-    4. Attempt to provide information or assistance BUT don't provide information that hasn't been asked or requested
-    5. ONLY transfer after exhausting your capabilities 
+    2. If the caller's need relates to booking, skip to "BOOKING PROCESS" immediately. Otherwise,
+    3. Ask clarifying questions to understand their needs 
+    4. Check if you can help with available functions 
+    5. Attempt to provide information or assistance BUT don't provide information that hasn't been asked or requested
 Example flow:
     • Caller: "I need to speak to someone" 
     • You: "Of course, could you let me know the nature of your call, I might be able to assist you." 
@@ -86,8 +86,10 @@ CUSTOM EAR PLUGS - Phone booking only:
     • Response: "Custom ear plugs require a consultation. Would you like me to transfer you to a member of staff?" 
 
 BOOKING PROCESS
-    • ALWAYS Request the patient to call the clinic or offer to transfer to a member of staff to book an appointment
+    • ALWAYS Offer to transfer to a member of staff to book an appointment
     • DO NOT attempt to handle bookings or appointment availability.
+    • Caller examples: "I want to make a booking", "I need to change or cancel my appointment", "I forgot when my appointment is", "Do you have appointments in [location]?", "Got anything free on [day]?"
+    • IF the caller does not want to be transferred, provide the clinic phone number.
 
 ESCALATION PROTOCOLS
 MEDICAL EMERGENCIES
@@ -97,15 +99,17 @@ Immediate escalation (999/A&E):
 GP referral:
     • Persistent pain, discharge, gradual hearing loss, dizziness 
     • Response: "This needs medical evaluation. Please contact your GP or call 111." 
+
 TRANSFERS
 Use transfer_to_receptionist ONLY after:
     1. Understanding the caller's need 
-    2. Attempting to help with available tools 
-    3. Confirming you cannot assist further 
+    2. Booking related matters, transfer immediately per "BOOKING PROCESS" (skip steps 3 and 4)
+    3. Attempting to help with available tools 
+    4. Confirming you cannot assist further 
 Transfer response: "I understand your [summarize need]. Let me connect you with a team member who can help with that. Please hold."
 
 KEY RULES
-    1. Initial inquiry before transfers - understand needs first 
+    1. Initial inquiry before transfers - understand needs first - except for matters related to bookings or appointment, follow "BOOKING PROCESS"
     2. Present all pricing options without asking age initially 
     3. Don't give full addresses until asked about specific clinics 
     4. Speak postcodes naturally, don't spell them out 
@@ -115,98 +119,6 @@ KEY RULES
     8. Convert UK times to UTC for functions 
 `
 const FUNCTION_DEFINITIONS = [
-  {
-    type: "function",
-    name: "check_appointment_availability",
-    description:
-      "Check if a specific appointment slot is available at Just Ears Clinic. Returns availability status and conflict details if unavailable. Use this before creating appointments.",
-    parameters: {
-      type: "object",
-      properties: {
-        appointment_type: {
-          type: "string",
-          description:
-            "Type of appointment: 'Microsuction', 'Hearing Test', 'Custom Ear Plugs', 'New Patient Consultation', 'Follow-up'",
-        },
-        date: {
-          type: "string",
-          description:
-            "Appointment date in YYYY-MM-DD format. Must be a weekday (Monday-Friday).",
-        },
-        time: {
-          type: "string",
-          description:
-            "Appointment time in HH:MM format (24-hour). Must be between 09:00-17:00.",
-        },
-        duration_minutes: {
-          type: "number",
-          description:
-            "Duration in minutes. Common durations: Microsuction=45, Hearing Test=60, New Patient=45, Follow-up=30",
-        },
-        location: {
-          type: "string",
-          description:
-            "Clinic location name (e.g., 'Winchester', 'Port Solent', 'Chichester')",
-        },
-      },
-      required: [
-        "appointment_type",
-        "date",
-        "time",
-        "duration_minutes",
-        "location",
-      ],
-    },
-  },
-  {
-    type: "function",
-    name: "create_appointment",
-    description:
-      "Create a confirmed appointment in the calendar. Only call this after checking availability and collecting all patient information.",
-    parameters: {
-      type: "object",
-      properties: {
-        patient_name: {
-          type: "string",
-          description: "Patient's full name",
-        },
-        phone: {
-          type: "string",
-          description: "Patient's contact phone number",
-        },
-        appointment_type: {
-          type: "string",
-          description: "Type of appointment",
-        },
-        start_datetime: {
-          type: "string",
-          description:
-            "Start date and time in ISO 8601 format (e.g., '2025-09-30T14:00:00Z')",
-        },
-        end_datetime: {
-          type: "string",
-          description: "End date and time in ISO 8601 format",
-        },
-        location: {
-          type: "string",
-          description: "Clinic location name",
-        },
-        notes: {
-          type: "string",
-          description:
-            "Appointment notes including symptoms, medications, and accessibility needs",
-        },
-      },
-      required: [
-        "patient_name",
-        "phone",
-        "appointment_type",
-        "start_datetime",
-        "end_datetime",
-        "location",
-      ],
-    },
-  },
   {
     type: "function",
     name: "get_clinic_information",
