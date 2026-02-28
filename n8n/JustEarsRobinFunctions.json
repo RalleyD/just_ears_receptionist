@@ -1,0 +1,1620 @@
+{
+  "name": "JustEarsRobinFunctions",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-assistant",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ed040143-e6b2-46d0-a6d7-35c011c4942d",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        1072,
+        6032
+      ],
+      "webhookId": "voice-assistant-api",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "check_availability",
+                    "id": "0bedf11d-5aaf-491b-8bf9-a62c7bf52fba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "check_availability"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "create_appointment",
+                    "id": "7e4d2285-66e8-4244-af84-ca5a8c939841"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create_appointment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "get_info",
+                    "id": "7e1b43ba-9444-4fa9-a800-d33917bf55cd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_info"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "14813988-68df-4a64-ab99-2e0fbce7a14b",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1280,
+        6016
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body;\n\n// Extract request parameters\nconst appointmentType = body.appointment_type;\nconst date = body.date;\nconst time = body.time;\nconst durationMinutes = body.duration_minutes;\nconst location = body.location;\n\n// Parse date and time\nconst [year, month, day] = date.split('-');\nconst [hour, minute] = time.split(':');\n\n// Create start datetime\nconst startDateTime = new Date(year, month - 1, day, hour, minute);\n\n// Create end datetime\nconst endDateTime = new Date(startDateTime);\nendDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);\n\n// Format for Google Calendar (ISO 8601)\nconst timeMin = startDateTime.toISOString();\nconst timeMax = endDateTime.toISOString();\n\nreturn {\n  json: {\n    appointment_type: appointmentType,\n    date: date,\n    time: time,\n    duration: durationMinutes,\n    location: location,\n    timeMin: timeMin,\n    timeMax: timeMax,\n    startDateTime: startDateTime.toISOString(),\n    endDateTime: endDateTime.toISOString()\n  }\n};"
+      },
+      "id": "5a738750-2d3f-456a-8b8c-577964e7eeb1",
+      "name": "Parse Availability Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        5808
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "f38c4bda63391cfede98406659e8d13601b2b629bd2ac465d2175ccc7ab279b2@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Practice Calendar"
+        },
+        "options": {}
+      },
+      "id": "8c607e27-acdf-4bba-9871-abab7b6ff956",
+      "name": "Check Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        1712,
+        5808
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "O4fEgdyuxvLl4vg2",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestData = $('Parse Availability Request').first().json\nconst calendarEvents = $input.all();\n\n// gives us the requested date time in a locale string format, hopefully GMT london if we have the calendar and workflow setup correctly!\n// const requestedDate = new Date(requestData).toString();\n// get the requested time window, UTC format\nconst requestedStart = new Date(requestData.timeMin);\nconst requestedEnd = new Date(requestData.timeMax);\n\n// Check if there are any conflicts - time overlap\nconst hasConflicts = calendarEvents.filter(\n  item => {\n    if (!item.json.start?.dateTime) return false;\n\n    const eventStart = new Date(item.json.start.dateTime);\n    const eventEnd = new Date(item.json.end.dateTime);\n\n    // conflict occurs if event starts before slot ends AND event ends after slot starts\n    return eventStart < requestedEnd && eventEnd > requestedStart;\n  }\n)\n.map(item => ({\n  start: item.json.start.dateTime,\n  end: item.json.end.dateTime,\n  summary: item.json.summary || 'Busy'\n}));\n\nif (hasConflicts.length > 0) {\n  // Slot is unavailable\n  return {\n    json: {\n      available: false,\n      requested_slot: {\n        date: requestData.date,\n        time: requestData.time,\n        duration: requestData.duration\n      },\n      conflicts: hasConflicts\n    }\n  };\n} else {\n  // Slot is available\n  return {\n    json: {\n      available: true,\n      requested_slot: {\n        date: requestData.date,\n        time: requestData.time,\n        duration: requestData.duration\n      }\n    }\n  };\n}"
+      },
+      "id": "ebbc4faf-2d60-474a-a1b3-589c35fec6ad",
+      "name": "Format Availability Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1904,
+        5808
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "dd07d02c-9733-4d03-9fcd-1a687cea8f05",
+      "name": "Respond Availability",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2112,
+        5808
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body;\n\nreturn {\n  json: {\n    patient_name: body.patient_name,\n    phone: body.phone,\n    patient_email: body.patient_email || '',\n    appointment_type: body.appointment_type,\n    start_datetime: body.start_datetime,\n    end_datetime: body.end_datetime,\n    location: body.location,\n    notes: body.notes || ''\n  }\n};"
+      },
+      "id": "b40ffd35-25cb-41a3-ab04-841e841b9ab7",
+      "name": "Parse Appointment Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        6032
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestData = $('Parse Appointment Request').item.json;\nconst calendarEvent = $input.item.json;\n\n// Parse datetime for friendly format\nconst startDate = new Date(requestData.start_datetime);\nconst options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };\nconst formattedDate = startDate.toLocaleDateString('en-GB', options);\nconst formattedTime = startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });\n\n// Calculate duration\nconst endDate = new Date(requestData.end_datetime);\nconst durationMinutes = (endDate - startDate) / 1000 / 60;\n\nconst confirmation = `Appointment booked for ${requestData.patient_name} on ${formattedDate} at ${formattedTime} at ${requestData.location} for ${requestData.appointment_type} (${durationMinutes} minutes).`;\n\nreturn {\n  json: {\n    success: true,\n    event_id: calendarEvent.id,\n    confirmation: confirmation\n  }\n};"
+      },
+      "id": "63dac2e3-4ab0-4b1d-9837-6a2e2111719e",
+      "name": "Format Appointment Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1904,
+        6032
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "53cd98a9-752d-4c82-a70b-c03eed38e575",
+      "name": "Respond Appointment",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2112,
+        6032
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body;\nconst topic = body.topic;\nconst clinicName = body.clinic_name || '';\n\nreturn {\n  json: {\n    topic: topic,\n    clinic_name: clinicName.toLowerCase().replace(/\\s+/g, '-')\n  }\n};"
+      },
+      "id": "5543a04e-bccd-4d9b-9ef7-8aa976ba7587",
+      "name": "Parse Info Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        6256
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "microsuction",
+                    "id": "a1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "microsuction"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "hearing-tests",
+                    "id": "a2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hearing-tests"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "custom-ear-plugs",
+                    "id": "a3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "custom-ear-plugs"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "locations",
+                    "id": "a4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "locations"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "wax-check",
+                    "id": "a5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "wax-check"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.topic }}",
+                    "rightValue": "clinics",
+                    "id": "a6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "clinics"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6741ffd-936b-4d56-8208-3e5332bdaa46",
+      "name": "Route by Topic",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1712,
+        6256
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/services-products/microsuction/",
+        "options": {}
+      },
+      "id": "d02965ed-5ad5-4a9c-afe4-f738c42b2ff7",
+      "name": "Get Microsuction Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        6208
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/services-products/hearing-loss-and-hearing-aids/",
+        "options": {}
+      },
+      "id": "448981b0-f1f0-4983-9a1b-86bd849d2af7",
+      "name": "Get Hearing Tests Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        6336
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/services-products/custom-made-ear-plugs/",
+        "options": {}
+      },
+      "id": "e4847730-f02e-4454-a5d9-3838aec84754",
+      "name": "Get Ear Plugs Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        6464
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/services-products/wax-check/",
+        "options": {}
+      },
+      "id": "8d8e8ab3-0fa5-4b16-8e22-d1f3d615ccdd",
+      "name": "Get Wax Check Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        6768
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "cosham",
+                    "id": "c1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cosham"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "bursledon",
+                    "id": "c2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bursledon"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "bordon",
+                    "id": "c3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bordon"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "poole",
+                    "id": "c4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "poole"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "orpington",
+                    "id": "c5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "orpington"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "tonbridge",
+                    "id": "c6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "tonbridge"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "salisbury-clinic",
+                    "id": "c7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "salisbury"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "ringwood-clinic",
+                    "id": "c8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ringwood"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "horndean-clinic",
+                    "id": "c9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "horndean"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "winchester-clinic",
+                    "id": "c10"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "winchester"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "gosport-clinic",
+                    "id": "c11"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "gosport"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "chichester-clinic",
+                    "id": "c12"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chichester"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "portssolent-clinic",
+                    "id": "c13"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "port-solent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "guildford-clinic",
+                    "id": "c14"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "guildford"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.clinic_name }}",
+                    "rightValue": "emsworth-clinic",
+                    "id": "c15"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "emsworth"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eaaa8ec0-100c-4abe-a2bf-86be2f70a57f",
+      "name": "Route by Clinic",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1968,
+        6944
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/cosham/",
+        "options": {}
+      },
+      "id": "f6be6984-2cb3-4c2e-9fb5-2f14d952ebf2",
+      "name": "Get Cosham Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        6752
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/bursledon/",
+        "options": {}
+      },
+      "id": "cc8d949c-d231-46e7-9b42-99f34c5e4538",
+      "name": "Get Bursledon Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        6896
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/bordon/",
+        "options": {}
+      },
+      "id": "4c4441f6-0db0-4d2d-a568-52bf5a8d20d4",
+      "name": "Get Bordon Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7024
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/poole/",
+        "options": {}
+      },
+      "id": "2d3aac98-0216-42d9-858f-060877fb66b2",
+      "name": "Get Poole Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7152
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/orpington/",
+        "options": {}
+      },
+      "id": "894c5fda-92a8-49fb-a01c-3fda53a806c4",
+      "name": "Get Orpington Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7280
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/tonbridge/",
+        "options": {}
+      },
+      "id": "1b03bb59-d2d0-49ee-955c-cf11876c04c9",
+      "name": "Get Tonbridge Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7408
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/salisbury-clinic/",
+        "options": {}
+      },
+      "id": "1382946b-4a61-4220-a3ad-32be5c0a0128",
+      "name": "Get Salisbury Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7536
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/ringwood-clinic/",
+        "options": {}
+      },
+      "id": "85000b8c-2e65-4239-a19b-968e980fec57",
+      "name": "Get Ringwood Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7680
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/horndean-clinic/",
+        "options": {}
+      },
+      "id": "dfccc4ba-3e7c-454f-9cbf-9a0fabbb3cda",
+      "name": "Get Horndean Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7824
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/winchester-clinic/",
+        "options": {}
+      },
+      "id": "3b1518f6-11c1-4f3e-9fef-3be68efa1163",
+      "name": "Get Winchester Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        7952
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/gosport-clinic/",
+        "options": {}
+      },
+      "id": "95af898f-e65d-40f9-bb89-05474406758d",
+      "name": "Get Gosport Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        8096
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/chichester-clinic/",
+        "options": {}
+      },
+      "id": "c92899f3-8c6d-445d-ba49-9c2b87cce021",
+      "name": "Get Chichester Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        8240
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/portssolent-clinic/",
+        "options": {}
+      },
+      "id": "117ddec1-96d1-418f-86fe-759a9531971a",
+      "name": "Get Port Solent Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        8560
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/guildford-clinic/",
+        "options": {}
+      },
+      "id": "4c96c792-dc8b-4dec-a70f-71fbeb005d51",
+      "name": "Get Guildford Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        8784
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/clinic/emsworth-clinic/",
+        "options": {}
+      },
+      "id": "dba371ee-5eea-45f9-bb6c-073b2b5e49ab",
+      "name": "Get Emsworth Clinic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        8400
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const topic = $('Parse Info Request').item.json.topic;\nconst htmlContent = $input.item.json.data;\n\n// Simple HTML tag removal (for better extraction, consider using a library)\nlet textContent = htmlContent\n  .replace(/<script[^>]*>([\\S\\s]*?)<\\/script>/gi, '')\n  .replace(/<style[^>]*>([\\S\\s]*?)<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\n// Limit content length (max 2000 characters for voice responses)\nif (textContent.length > 5000) {\n  textContent = textContent.substring(0, 5000) + '...';\n}\n\nreturn {\n  json: {\n    topic: topic,\n    content: textContent\n  }\n};"
+      },
+      "id": "8c92c34f-d843-4937-a1e9-aaf19ee41fa3",
+      "name": "Extract Content",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2480,
+        6320
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "86878378-ac19-4287-8a03-e3099984cdc8",
+      "name": "Respond Info",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2688,
+        6320
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "f38c4bda63391cfede98406659e8d13601b2b629bd2ac465d2175ccc7ab279b2@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Practice Calendar"
+        },
+        "start": "={{ $json.start_datetime }}",
+        "end": "={{ $json.end_datetime }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $json.patient_email }}"
+          ],
+          "description": "={{ $json.notes }}",
+          "location": "={{ $json.location }}",
+          "sendUpdates": "all",
+          "summary": "={{ $json.patient_name }} - {{ $json.appointment_type }}"
+        }
+      },
+      "id": "e33a8cae-cad9-4501-b745-cdfaec5bdf77",
+      "name": "Create Calendar Event1",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        1712,
+        6032
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "O4fEgdyuxvLl4vg2",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.justears.co.uk/our-clinics/",
+        "options": {}
+      },
+      "id": "f82a2fcd-8c30-42ac-8c4c-20608e90de49",
+      "name": "Get Locations Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        6592
+      ],
+      "typeVersion": 4.2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Parse Availability Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Appointment Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Info Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Availability Request": {
+      "main": [
+        [
+          {
+            "node": "Check Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Calendar": {
+      "main": [
+        [
+          {
+            "node": "Format Availability Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Availability Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Appointment Request": {
+      "main": [
+        [
+          {
+            "node": "Create Calendar Event1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Appointment Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Info Request": {
+      "main": [
+        [
+          {
+            "node": "Route by Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Topic": {
+      "main": [
+        [
+          {
+            "node": "Get Microsuction Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Hearing Tests Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Ear Plugs Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Locations Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Wax Check Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route by Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Microsuction Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Hearing Tests Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ear Plugs Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wax Check Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Clinic": {
+      "main": [
+        [
+          {
+            "node": "Get Cosham Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Bursledon Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Bordon Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Poole Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Orpington Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Tonbridge Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Salisbury Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Ringwood Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Horndean Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Winchester Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Gosport Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Chichester Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Port Solent Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Guildford Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Emsworth Clinic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Cosham Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bursledon Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bordon Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Poole Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Orpington Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tonbridge Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Salisbury Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ringwood Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Horndean Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Winchester Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Gosport Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chichester Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Port Solent Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Guildford Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emsworth Clinic": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content": {
+      "main": [
+        [
+          {
+            "node": "Respond Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Calendar Event1": {
+      "main": [
+        [
+          {
+            "node": "Format Appointment Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Locations Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1e5c5eaa-2661-4590-87e5-595fef2694ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "91e532732c7cfc18754f535ff85ff66873fe386a112e3aaac1455707112216ba"
+  },
+  "id": "bijNnJwjSIsKS10T",
+  "tags": []
+}
