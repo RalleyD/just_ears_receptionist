@@ -1,0 +1,152 @@
+{
+  "name": "Twilio Weekly Call Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtDay": 1,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Weekly Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.twilio.com/2010-04-01/Accounts/{{ $env.TWILIO_ACCOUNT_SID }}/Calls.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "StartTime>",
+              "value": "={{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "StartTime<",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "PageSize",
+              "value": "1000"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-twilio-calls",
+      "name": "Fetch Twilio Calls",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "",
+          "name": "Twilio Basic Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const calls = $input.first().json.calls || [];\n\nreturn calls.map(call => ({\n  json: {\n    'Call Sid': call.sid || '',\n    'Account Sid': call.account_sid || '',\n    'Start Time': call.start_time || '',\n    'End Time': call.end_time || '',\n    'Duration': call.duration || '',\n    'From': call.from_formatted || call.from || '',\n    'To': call.to_formatted || call.to || '',\n    'Direction': call.direction || '',\n    'Secure Trunking': call.trunk_sid ? 'Yes' : 'No',\n    'Called Via': call.caller_name || '',\n    'Status': call.status || '',\n    'Api Version': call.api_version || '',\n    'Price': call.price || '',\n    'Price Unit': call.price_unit || '',\n    'Parent Call Sid': call.parent_call_sid || '',\n    'Phone Number Sid': call.phone_number_sid || ''\n  }\n}));"
+      },
+      "id": "transform-data",
+      "name": "Transform Call Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "=twilio-call-report-{{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}-to-{{ $now.toFormat('yyyy-MM-dd') }}.csv"
+        }
+      },
+      "id": "convert-to-csv",
+      "name": "Convert to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "recipient@example.com",
+        "subject": "=Twilio Weekly Call Report — {{ $now.minus({days: 7}).toFormat('dd MMM') }} to {{ $now.toFormat('dd MMM yyyy') }}",
+        "message": "Hi,\n\nPlease find attached the weekly Twilio call report.\n\nPeriod: {{ $now.minus({days: 7}).toFormat('dd MMM yyyy') }} — {{ $now.toFormat('dd MMM yyyy') }}\n\nRegards",
+        "options": {
+          "attachments": "data"
+        }
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [880, 0],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Twilio Calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Twilio Calls": {
+      "main": [
+        [
+          {
+            "node": "Transform Call Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Call Data": {
+      "main": [
+        [
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
