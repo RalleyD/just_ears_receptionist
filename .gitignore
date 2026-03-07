@@ -8,3 +8,11 @@ vite.config.ts.*
 # cloudflare worker
 .wrangler/
 worker-configuration.d.ts
+
+# Python dashboard
+dashboard/venv/
+dashboard/__pycache__/
+dashboard/**/__pycache__/
+dashboard/.env
+
+dashboard/*.egg-info/
