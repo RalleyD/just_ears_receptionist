@@ -26,7 +26,7 @@ def generate_monthly_call_history() -> pd.DataFrame:
     # 1 month DateTimeIndex
     # date and time ISO format
     dti = pd.date_range(start, end)
-    # start_time col: random distribution of 5-15 calls per day
+    # start_time col: random distribution of 0-15 calls per day
     daily_calls = np.random.randint(15, size=(len(dti)))
     # for each day in the daily index
     call_times = []
