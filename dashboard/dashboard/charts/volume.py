@@ -22,10 +22,7 @@ def create_call_volume_chart(df: pd.DataFrame, chart_type: str) -> go.Figure:
     # group by and reduce (by-day total)
     call_ser = pd.Series(df["status"].values, index=df["start_time"])
 
-    print(call_ser)
     x_data = call_ser.resample("D").count()
-
-    print(x_data.head(10))
 
     if chart_type.casefold() == "bar":
         fig_chart = go.Bar
