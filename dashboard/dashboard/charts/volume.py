@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from dashboard.data.metrics import total_calls
 
 
-def create_call_volume_chart(df: pd.DataFrame, chart_type: str) -> go.Figure:
+def create_call_volume_chart(df: pd.DataFrame, chart_type: str, title_suffix="Monthly") -> go.Figure:
     """
     Create a chart figure based on total daily call volume
 
@@ -32,8 +32,8 @@ def create_call_volume_chart(df: pd.DataFrame, chart_type: str) -> go.Figure:
     fig = go.Figure(
         data=[fig_chart(x=x_data.index, y=x_data)],
         layout=go.Layout(
-            title="Month Call Summary",
-            xaxis=dict(title="Date (YYYY-MM-DD)"),
+            title=f"{title_suffix} Call Summary",
+            xaxis=dict(title=f"Previous {title_suffix}"),
             yaxis=dict(title="Total Calls"),
             plot_bgcolor="rgba(0,0,0,0)",  # transparent
             paper_bgcolor="rgba(0,0,0,0)",  # transparent
