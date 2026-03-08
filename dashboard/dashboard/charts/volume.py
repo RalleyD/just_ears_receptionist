@@ -10,20 +10,50 @@ from dashboard.data.metrics import total_calls
 
 def create_call_volume_chart(df: pd.DataFrame, chart_type: str) -> go.Figure:
 
-    weekday = df["start_time"]  # . TBC!
+    # # x axis
+    # date = pd.date_range(df["start_time"][0].date(),
+    #                      df["start_time"][-1].date(),
+    #                      freq='D')
+
+    # group by and reduce (by-day total)
+    call_ser = pd.Series(df["status"].values, index=df["start_time"])
+
+    print(call_ser)
+    x_data = call_ser.resample("D").count()
+
+    print(x_data.head(10))
+
+    if chart_type.casefold() == "bar":
+        fig_chart = go.Bar
+    else:
+        fig_chart = go.Scatter
 
     fig = go.Figure(
-        data=[go.Bar(x=weekday, y=total_calls)],
+        data=[fig_chart(x=x_data.index, y=x_data)],
         layout=go.Layout(
-            title=go.Layout.title(text="Month Call Summary")
+            title="Month Call Summary",
+            xaxis=dict(title="Date (YYYY-MM-DD)"),
+            yaxis=dict(title="Total Calls"),
+            plot_bgcolor="rgba(0,0,0,0)",  # transparent
+            paper_bgcolor="rgba(0,0,0,0)",  # transparent
+            font_color="#E8EAED",
+            # set colour pallete here. The first colour is the default.
+            colorway=["#7B8CDE", "#C77DBA", "#E8C547"],
         )
     )
 
-    fig.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",  # transparent
-        paper_bgcolor="rgba(0,0,0,0)",  # transparent
-        font_color="#E8EAED",
-        colorway=["#7B8CDE", "#C77DBA", "#E8C547"],
-    )
-
     return fig
+
+
+if __name__ == "__main__":
+    from dashboard.data.dummy import generate_monthly_call_history
+    month_calls = generate_monthly_call_history()
+
+    for chart_type in ["bar", "line"]:
+        plot = create_call_volume_chart(month_calls, chart_type)
+        plot.update_layout(
+            template="plotly_dark",
+            plot_bgcolor="#111111",
+            paper_bgcolor="#111111",
+        )
+        plot.show()
