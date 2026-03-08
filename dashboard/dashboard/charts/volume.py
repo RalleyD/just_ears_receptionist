@@ -9,12 +9,16 @@ from dashboard.data.metrics import total_calls
 
 
 def create_call_volume_chart(df: pd.DataFrame, chart_type: str) -> go.Figure:
+    """
+    Create a chart figure based on total daily call volume
 
-    # # x axis
-    # date = pd.date_range(df["start_time"][0].date(),
-    #                      df["start_time"][-1].date(),
-    #                      freq='D')
+    Args:
+        df (DataFrame): Twilo call log data
+        chart_type (str): chose between 'bar' or 'line'
 
+    Returns
+        Plotly graph object - Figure (to be passed into Streamlit)
+    """
     # group by and reduce (by-day total)
     call_ser = pd.Series(df["status"].values, index=df["start_time"])
 
