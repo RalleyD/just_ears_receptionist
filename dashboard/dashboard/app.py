@@ -1,4 +1,24 @@
+"""
+┌─────────────────────────────────────────────────┐
+│  Title                                          │
+├──────────┬──────────┬──────────┬────────────────┤
+│ [Period] │ [Chart]  │          │                │
+│ selector │ toggle   │          │                │
+├──────────┴──────────┴──────────┴────────────────┤
+│ Total Calls  │  Total Cost  │ Calls Transferred │
+├──────────────┴──────────────┴───────────────────┤
+│                                                 │
+│              Call Volume Chart                   │
+│                                                 │
+└─────────────────────────────────────────────────┘
+"""
+
 import streamlit as st
+import pandas as pd
+from pandas.tseries.offsets import DateOffset
+from dashboard.data.dummy import generate_monthly_call_history
+import dashboard.data.metrics as metrics
+from dashboard.charts.volume import create_call_volume_chart
 
 st.set_page_config(
     page_title="Just Ears - Call Dashboard",
@@ -7,4 +27,107 @@ st.set_page_config(
 )
 
 st.title("Just Ears Call Dashboard")
+# show for a limited time
 st.write("Dashboard is running.")
+
+
+def period_filter():
+    pass
+
+# ------------------- #
+#  UI Elements  #
+# ------------------- #
+
+
+# ------------------- #
+#  UI Layout  #
+# ------------------- #
+
+@st.cache_data
+def get_call_history() -> pd.DataFrame:
+    return generate_monthly_call_history()
+
+
+def st_segmented_control_no_deselect(container, label, options, default, key=None):
+    def prevent_deselection(key, default):
+        if st.session_state[key] is None:
+            st.session_state[key] = default
+
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+    return container.segmented_control(
+        label,
+        options=options,
+        selection_mode="single",
+        on_change=lambda: prevent_deselection(key, default),
+    )
+
+
+with st.container(horizontal=True) as no_deselect:
+    calls_data = get_call_history()
+
+    # TODO figure out string parsing, if required
+    # period = st.segmented_control(
+    #     "Period",
+    #     ["7 Days", "14 Days", "1 Month"],
+    #     selection_mode="single",
+    #     default="1 Month"
+    # )
+    # period = st_segmented_control_no_deselect(
+    #     container=no_deselect,
+    #     label="Period",
+    #     options=["7 Days", "14 Days", "1 Month"],
+    #     default="1 Month"
+    # )
+
+    period = st.radio(
+        "Period",
+        ["7 Days", "14 Days", "1 Month"],
+        index=2,
+        horizontal=True
+    )
+
+    chart_type: str = st.radio(
+        "Chart Type",
+        ["Bar", "Line"],
+        index=0,
+        horizontal=True
+    )
+
+    period_spec = period.split(" ")
+    # work backwards so that times align - although
+    # this isn't a dealbreakeras we can always .loc by YYYY-MM-DD only
+    period_spec = {period_spec[1].lower(): -int(period_spec[0])}
+    # setattr of dateoffset tuple[1], value[0]
+
+    if "Month" in period:
+        duration = period_spec.pop("month")
+        period_spec["months"] = duration
+
+    print(calls_data["start_time"].iloc[-1] + DateOffset(**period_spec))
+
+    call_data_period = calls_data.copy()
+    call_data_period = call_data_period.loc[
+        call_data_period["start_time"] >= call_data_period["start_time"].iloc[-1] +
+        DateOffset(**period_spec),
+        call_data_period.columns
+    ]
+
+with st.container(horizontal=True, border=True):
+    st.metric(
+        label="Total Calls",
+        value=metrics.total_calls(call_data_period)
+    )
+    st.metric(
+        label="Total Cost",
+        value=f"£{metrics.total_cost(call_data_period)}"
+    )
+    st.metric(
+        label="Total Transferred",
+        value=metrics.total_transfers(call_data_period)
+    )
+
+with st.container(horizontal=True, border=True):
+    st.plotly_chart(create_call_volume_chart(
+        call_data_period, chart_type.casefold(), title_suffix=period))
