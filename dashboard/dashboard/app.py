@@ -2,13 +2,14 @@
 ┌─────────────────────────────────────────────────┐
 │  Title                                          │
 ├──────────┬──────────┬──────────┬────────────────┤
-│ [Period] │ [Chart]  │          │                │
+│ [Period] │ [Chart]  │          │  Twilio Balance│
 │ selector │ toggle   │          │                │
 ├──────────┴──────────┴──────────┴────────────────┤
 │ Total Calls  │  Total Cost  │ Calls Transferred │
 ├──────────────┴──────────────┴───────────────────┤
-│                                                 │
-│              Call Volume Chart                   │
+│ Chart | Call Log |                              |
+│-------------------------------------------------|
+│       Call Volume Chart / Call Log Table        │
 │                                                 │
 └─────────────────────────────────────────────────┘
 """
@@ -128,6 +129,12 @@ with st.container(horizontal=True, border=True):
         value=metrics.total_transfers(call_data_period)
     )
 
-with st.container(horizontal=True, border=True):
+tab_1, tab_2 = st.tabs(["chart", "call_log"])
+# with st.container(horizontal=True, border=True):
+with tab_1:
     st.plotly_chart(create_call_volume_chart(
         call_data_period, chart_type.casefold(), title_suffix=period))
+
+with tab_2:
+    st.dataframe(call_data_period,
+                 hide_index=True)
