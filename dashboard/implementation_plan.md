@@ -70,6 +70,19 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 
 **Verify:** `streamlit run app.py` — full dashboard renders with dummy data, controls work, chart toggles between bar/line.
 
+**step 1e - Table tab** (`tables.py`):
+- keeping the same period selector 
+- chart tab - "call log" tab
+- - the table shows the pure Twilio data for the specified period
+- - Does streamlit provide a table where we can filter and search?
+
+**step 1f - call heatmap** (```charts/heatmap.py```):
+- create a dropdown of dates (populated with dateutil for a valid month range, past 1 days, past 7 days)
+- calendar day (Y-axis), hour (x axis): total the call volume each hour and colour the heatmap based on the range (red upper quartile, blue lower quartile, yellow interquartile)
+
+**step 1g - credit widget**
+- Traffic light widget - Remaining Twilio Credit (Green > $20, Yellow < $10, Red < $5)
+- figure out the nicest place to put this for now.
 ---
 
 ## Phase 2: Wire Up Real Twilio Data
@@ -83,7 +96,8 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 2. Maps Twilio `CallInstance` objects to the same DataFrame columns as dummy data
 3. Handles price quirks: negative string -> positive float, None -> 0.0
 4. In `app.py`: swap `generate_monthly_call_history()` for `fetch_calls()`, wrap with `@st.cache_data(ttl=300)`
-5. Add manual "Refresh" button that clears the cache
+5. Get twilio account/project credit
+6. Add manual "Refresh" button that clears the cache
 
 **Watch out for:**
 - Twilio returns UTC — convert to `Europe/London` for display
