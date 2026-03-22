@@ -38,7 +38,8 @@ def create_hourly_heatmap(call_data_period: pd.DataFrame) -> go.Figure:
         )
     )
     fig.update_xaxes(tickangle=45)
-
+    fig.update_yaxes(tickmode="array",
+                     tickvals=matrix.index)
     fig.update_layout(
         title=dict(text="Daily Call Volume")
     )
