@@ -16,6 +16,7 @@
 
 import streamlit as st
 import pandas as pd
+import random
 from pandas.tseries.offsets import DateOffset
 from dashboard.data.dummy import generate_monthly_call_history
 import dashboard.data.metrics as metrics
@@ -96,6 +97,29 @@ with st.container(horizontal=True) as no_deselect:
         index=0,
         horizontal=True
     )
+
+    twilio_balance = st.container()
+    twilio_balance.text("Twilio Balance")
+    tw_balance = random.randrange(0, 20)
+    balance_thresh = {
+        5: "red",
+        10: "yellow",
+        20: "green"
+    }
+    balance_icon = {
+        "red": ":material/exclamation:",
+        "green": ":material/check:",
+        "yellow": ":material/warning:"
+    }
+    if tw_balance < min(list(balance_thresh.keys())):
+        tw_col = "red"
+    else:
+        for thresh in reversed(list(balance_thresh.keys())):
+            if tw_balance // thresh:
+                tw_col = balance_thresh.get(thresh, "red")
+                break
+    twilio_balance.badge(f"£{tw_balance}", color=tw_col,
+                         icon=balance_icon[tw_col])
 
     period_spec = period.split(" ")
     # work backwards so that times align - although
