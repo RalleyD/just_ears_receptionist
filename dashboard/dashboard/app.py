@@ -20,6 +20,7 @@ from pandas.tseries.offsets import DateOffset
 from dashboard.data.dummy import generate_monthly_call_history
 import dashboard.data.metrics as metrics
 from dashboard.charts.volume import create_call_volume_chart
+from dashboard.charts.heatmap import create_hourly_heatmap
 
 st.set_page_config(
     page_title="Just Ears - Call Dashboard",
@@ -49,20 +50,20 @@ def get_call_history() -> pd.DataFrame:
     return generate_monthly_call_history()
 
 
-def st_segmented_control_no_deselect(container, label, options, default, key=None):
-    def prevent_deselection(key, default):
-        if st.session_state[key] is None:
-            st.session_state[key] = default
+# def st_segmented_control_no_deselect(container, label, options, default, key=None):
+#     def prevent_deselection(key, default):
+#         if st.session_state[key] is None:
+#             st.session_state[key] = default
 
-    if key not in st.session_state:
-        st.session_state[key] = default
+#     if key not in st.session_state:
+#         st.session_state[key] = default
 
-    return container.segmented_control(
-        label,
-        options=options,
-        selection_mode="single",
-        on_change=lambda: prevent_deselection(key, default),
-    )
+#     return container.segmented_control(
+#         label,
+#         options=options,
+#         selection_mode="single",
+#         on_change=lambda: prevent_deselection(key, default),
+#     )
 
 
 with st.container(horizontal=True) as no_deselect:
@@ -129,7 +130,7 @@ with st.container(horizontal=True, border=True):
         value=metrics.total_transfers(call_data_period)
     )
 
-tab_1, tab_2 = st.tabs(["chart", "call_log"])
+tab_1, tab_2, tab_3 = st.tabs(["chart", "Call Volume", "Call Volume"])
 # with st.container(horizontal=True, border=True):
 with tab_1:
     st.plotly_chart(create_call_volume_chart(
@@ -138,3 +139,8 @@ with tab_1:
 with tab_2:
     st.dataframe(call_data_period,
                  hide_index=True)
+
+with tab_3:
+    st.plotly_chart(create_hourly_heatmap(
+        call_data_period
+    ))
