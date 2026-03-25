@@ -36,13 +36,13 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                      "Helvetica Neue", Arial, sans-serif;
     }
-    /* Purple accent on headings */
+    /* Clean dark headings */
     h1, h2, h3 {
-        color: #7a00df !important;
+        color: #000000 !important;
     }
     /* Metric card styling */
     [data-testid="stMetric"] {
-        background: #f5f0fa;
+        background: #eeeeee;
         border-left: 4px solid #7a00df;
         border-radius: 6px;
         padding: 12px 16px;
@@ -51,7 +51,7 @@ st.markdown("""
         color: #313131 !important;
     }
     [data-testid="stMetricValue"] {
-        color: #7a00df !important;
+        color: #32373c !important;
     }
 </style>
 """, unsafe_allow_html=True)
