@@ -29,9 +29,34 @@ st.set_page_config(
     layout="wide",
 )
 
+st.markdown("""
+<style>
+    /* Brand font stack */
+    html, body, [class*="css"] {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                     "Helvetica Neue", Arial, sans-serif;
+    }
+    /* Purple accent on headings */
+    h1, h2, h3 {
+        color: #7a00df !important;
+    }
+    /* Metric card styling */
+    [data-testid="stMetric"] {
+        background: #f5f0fa;
+        border-left: 4px solid #7a00df;
+        border-radius: 6px;
+        padding: 12px 16px;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #313131 !important;
+    }
+    [data-testid="stMetricValue"] {
+        color: #7a00df !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Just Ears Call Dashboard")
-# show for a limited time
-st.write("Dashboard is running.")
 
 
 def period_filter():
@@ -119,7 +144,7 @@ with st.container(horizontal=True) as no_deselect:
                 tw_col = balance_thresh.get(thresh, "red")
                 break
     twilio_balance.badge(f"£{tw_balance}", color=tw_col,
-                         icon=balance_icon[tw_col])
+                         icon=balance_icon.get(tw_col, "red"))
 
     period_spec = period.split(" ")
     # work backwards so that times align - although
