@@ -17,6 +17,7 @@
 import streamlit as st
 import pandas as pd
 import random
+from pathlib import Path
 from pandas.tseries.offsets import DateOffset
 from dashboard.data.dummy import generate_monthly_call_history
 import dashboard.data.metrics as metrics
@@ -28,6 +29,12 @@ st.set_page_config(
     page_icon="\u260E",
     layout="wide",
 )
+
+package_root = Path(__file__).parent.parent
+st.html("<style>[alt=Logo] { height: 3rem; }</style>")
+st.logo(package_root / "images" / "logo.png",
+        size="large")
+
 
 st.markdown("""
 <style>
