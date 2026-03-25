@@ -43,7 +43,7 @@ st.markdown("""
     /* Metric card styling */
     [data-testid="stMetric"] {
         background: #eeeeee;
-        border-left: 4px solid #7a00df;
+        border-left: 4px solid #0693e3;
         border-radius: 6px;
         padding: 12px 16px;
     }
