@@ -38,7 +38,7 @@ def create_call_volume_chart(df: pd.DataFrame, chart_type: str, title_suffix="Mo
             plot_bgcolor="#FAFAFA",
             paper_bgcolor="#FAFAFA",
             font_color="#313131",
-            colorway=["#7a00df", "#0693e3", "#00d084"],
+            colorway=["#0693e3", "#7a00df", "#00d084"],
         )
     )
 
