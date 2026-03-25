@@ -37,9 +37,9 @@ def create_hourly_heatmap(call_data_period: pd.DataFrame) -> go.Figure:
             colorscale=[
                 [0.0, "#f5f0fa"],
                 [0.25, "#c9a0e8"],
-                [0.5, "#7a00df"],
-                [0.75, "#0693e3"],
-                [1.0, "#00d084"],
+                [0.5, "#B65CFF"],
+                [0.75, "#7A00DF"],
+                [1.0, "#5A00A3"],
             ]
         )
     )

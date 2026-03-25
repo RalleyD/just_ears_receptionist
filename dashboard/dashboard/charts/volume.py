@@ -35,8 +35,8 @@ def create_call_volume_chart(df: pd.DataFrame, chart_type: str, title_suffix="Mo
             title=f"{title_suffix} Call Summary",
             xaxis=dict(title=f"Previous {title_suffix}"),
             yaxis=dict(title="Total Calls"),
-            plot_bgcolor="rgba(0,0,0,0)",  # transparent
-            paper_bgcolor="rgba(0,0,0,0)",  # transparent
+            plot_bgcolor="#FAFAFA",
+            paper_bgcolor="#FAFAFA",
             font_color="#313131",
             colorway=["#7a00df", "#0693e3", "#00d084"],
         )
