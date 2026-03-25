@@ -117,8 +117,30 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 2. Add `st.caption()` showing last-refreshed time
 3. Add `st.divider()` between sections
 4. Fine-tune chart margins, hover labels, axis formatting
+5. match colour scheme and font of just-ears website (vibe code this)
+
+### Colour Hierarchy
+Role	Colour	Hex	Used For
+Dominant	White	#ffffff	Page backgrounds, section backgrounds (~50% of page)
+Primary text	Black	#000000	Body text, nav links, headings (~25% of page)
+Secondary text	Dark grey	#313131	Secondary/softer body text
+Buttons/CTAs	Dark charcoal	#32373c	"Book Now" buttons, file download buttons (white text on dark)
+Brand accent	Vivid purple	#7a00df	Synced/highlighted content blocks, brand identity (~5-10%)
+Secondary accent	Cyan blue	#0693e3	Available as preset, minor accent
+Tertiary accent	Green cyan	#00d084	Available as preset, WhatsApp-adjacent elements
+Light neutral	Light grey	#eeeeee	Subtle backgrounds, dividers
+Footer	Dark/black	Dark bg, white text	Footer section
 
 **Verify:** Dashboard looks cohesive — dark background, soft accent colors, professional feel.
+
+## Phase 4: Control Panel
+
+Runtime file (file-driven runtime config) - each time the a node is instantiated (justin called) - the file is
+read so Justin knows what state to operate in during calls:
+
+buttons:
+
+- out of office - preamble that "i can't take bookings but i can help with queries."
 
 ---
 
