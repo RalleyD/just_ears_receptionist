@@ -34,14 +34,23 @@ def create_hourly_heatmap(call_data_period: pd.DataFrame) -> go.Figure:
             z=matrix.values,
             x=[t.strftime("%H:%M") for t in matrix.columns],
             y=matrix.index,
-            colorscale="Viridis"
+            colorscale=[
+                [0.0, "#f5f0fa"],
+                [0.25, "#c9a0e8"],
+                [0.5, "#7a00df"],
+                [0.75, "#0693e3"],
+                [1.0, "#00d084"],
+            ]
         )
     )
     fig.update_xaxes(tickangle=45)
     fig.update_yaxes(tickmode="array",
                      tickvals=matrix.index)
     fig.update_layout(
-        title=dict(text="Daily Call Volume")
+        title=dict(text="Daily Call Volume"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font_color="#313131",
     )
 
     return fig
