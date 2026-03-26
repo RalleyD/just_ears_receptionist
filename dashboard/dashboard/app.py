@@ -178,7 +178,7 @@ with st.container(horizontal=True, border=True):
         value=metrics.total_transfers(call_data_period)
     )
 
-tab_1, tab_2, tab_3 = st.tabs(["chart", "Call Volume", "Call Volume"])
+tab_1, tab_2, tab_3 = st.tabs(["Chart", "Call Log", "Call Volume"])
 # with st.container(horizontal=True, border=True):
 with tab_1:
     st.plotly_chart(create_call_volume_chart(
