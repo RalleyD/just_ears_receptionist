@@ -66,55 +66,47 @@ st.markdown("""
 st.title("Just Ears Call Dashboard")
 
 
-def period_filter():
-    pass
-
 # ------------------- #
 #  UI Elements  #
 # ------------------- #
+# from PIL import Image
+# logo = Image.open(package_root / "images" / "logo.png")
+# resized_logo = logo.resize((200, 80))  # Custom width/height
 
+# # Place in sidebar
+# with st.sidebar:
+#     st.image(resized_logo)
 
 # ------------------- #
 #  UI Layout  #
 # ------------------- #
+
 
 @st.cache_data
 def get_call_history() -> pd.DataFrame:
     return generate_monthly_call_history()
 
 
-# def st_segmented_control_no_deselect(container, label, options, default, key=None):
-#     def prevent_deselection(key, default):
-#         if st.session_state[key] is None:
-#             st.session_state[key] = default
-
-#     if key not in st.session_state:
-#         st.session_state[key] = default
-
-#     return container.segmented_control(
-#         label,
-#         options=options,
-#         selection_mode="single",
-#         on_change=lambda: prevent_deselection(key, default),
-#     )
-
+with st.sidebar:
+    st.segmented_control(
+        label="Agent Mode",
+        options=["Call Transfer",
+                 "Out Of Office"],
+        selection_mode="single",
+        default="Call Transfer",
+        help=("Set the Agent's operating mode: \n\n"
+              "Call Transfer: "
+              "The agent will transfer patient calls "
+              "to the main office.\n\n"
+              "Out Of Office: "
+              "The agent will inform users that only "
+              "general queries can be handled at this time. "
+              "Calls will not be transferred"
+              )
+    )
 
 with st.container(horizontal=True) as no_deselect:
     calls_data = get_call_history()
-
-    # TODO figure out string parsing, if required
-    # period = st.segmented_control(
-    #     "Period",
-    #     ["7 Days", "14 Days", "1 Month"],
-    #     selection_mode="single",
-    #     default="1 Month"
-    # )
-    # period = st_segmented_control_no_deselect(
-    #     container=no_deselect,
-    #     label="Period",
-    #     options=["7 Days", "14 Days", "1 Month"],
-    #     default="1 Month"
-    # )
 
     period = st.radio(
         "Period",
