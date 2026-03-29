@@ -10,10 +10,10 @@ import os
 import dashboard.data.dummy as dummy
 
 load_dotenv(override=False)
-account_sid = os.environ['TWILIO_ACCOUNT_SID']
-auth_token = os.environ['TWILIO_AUTH_TOKEN']
 # perform module level Client instantiation and auth
 try:
+    account_sid = os.environ['TWILIO_ACCOUNT_SID']
+    auth_token = os.environ['TWILIO_AUTH_TOKEN']
     client = Client(account_sid, auth_token)
 except Exception as e:
     warnings.warn("Twilio Client initialisation failed, using dummy data: ", e)
