@@ -21,7 +21,11 @@ def total_calls(df: pd.DataFrame) -> int:
 def total_cost(df: pd.DataFrame) -> float:
     # sum the total cost of the calls
     # using single label loc to get a series to sum
-    return df.loc[:, "price"].sum()
+    # from twilio, call costs come as a negative string float (None if empty)
+    prices = df.loc[:, "price"]
+    prices = prices.fillna(0.0)
+    prices = -prices.astype(float)
+    return prices.sum()
 
 
 def total_transfers(df: pd.DataFrame) -> int:
@@ -30,7 +34,7 @@ def total_transfers(df: pd.DataFrame) -> int:
 
 
 if __name__ == "__main__":
-    from dashboard.data.dummy import generate_monthly_call_history
+    from dashboard.data.twilio_client import generate_monthly_call_history
 
     month_calls: pd.DataFrame = generate_monthly_call_history()
 
