@@ -12,11 +12,12 @@ import dashboard.data.dummy as dummy
 load_dotenv(override=False)
 # perform module level Client instantiation and auth
 try:
-    account_sid = os.environ['TWILIO_ACCOUNT_SID']
-    auth_token = os.environ['TWILIO_AUTH_TOKEN']
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID', None)
+    auth_token = os.environ.get('TWILIO_AUTH_TOKEN', None)
     client = Client(account_sid, auth_token)
 except Exception as e:
-    warnings.warn("Twilio Client initialisation failed, using dummy data: ", e)
+    warnings.warn(
+        f"Twilio Client initialisation failed, using dummy data: {e}")
 
 
 def generate_monthly_call_history() -> pd.DataFrame:
@@ -30,7 +31,7 @@ def generate_monthly_call_history() -> pd.DataFrame:
             limit=31
         )
     except (TwilioException, TwilioRestException) as e:
-        warnings.warn("Twilio API request failed, using dummy data: ", e)
+        warnings.warn(f"Twilio API request failed, using dummy data: {e}")
         return dummy.generate_monthly_call_history()
 
     start_time = []
@@ -72,7 +73,7 @@ def get_account_balance() -> float | None:
 
         return float(account.balance.fetch().balance)
     except (TwilioException, TwilioRestException) as e:
-        warnings.warn("Twilio: unable to access account balance: ", e)
+        warnings.warn(f"Twilio: unable to access account balance: {e}")
         return None
 
 
