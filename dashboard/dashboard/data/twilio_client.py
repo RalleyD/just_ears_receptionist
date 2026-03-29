@@ -78,6 +78,6 @@ def get_account_balance() -> float | None:
 
 if __name__ == "__main__":
     print(
-        generate_monthly_call_history().head()
+        generate_monthly_call_history().head(30)
     )
     print(get_account_balance())
