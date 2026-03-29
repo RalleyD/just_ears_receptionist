@@ -160,11 +160,11 @@ with st.container(horizontal=True) as no_deselect:
         duration = period_spec.pop("month")
         period_spec["months"] = duration
 
-    # print(calls_data["start_time"].iloc[-1] + DateOffset(**period_spec))
+    print(calls_data["start_time"].max() + DateOffset(**period_spec))
 
     call_data_period = calls_data.copy()
     call_data_period = call_data_period.loc[
-        call_data_period["start_time"] >= call_data_period["start_time"].iloc[-1] +
+        call_data_period["start_time"] >= call_data_period["start_time"].max() +
         DateOffset(**period_spec),
         call_data_period.columns
     ]
