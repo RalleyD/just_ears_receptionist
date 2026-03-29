@@ -19,7 +19,7 @@ import pandas as pd
 import random
 from pathlib import Path
 from pandas.tseries.offsets import DateOffset
-from dashboard.data.dummy import generate_monthly_call_history
+from dashboard.data.twilio_client import generate_monthly_call_history, get_account_balance
 import dashboard.data.metrics as metrics
 from dashboard.charts.volume import create_call_volume_chart
 from dashboard.charts.heatmap import create_hourly_heatmap
@@ -124,26 +124,31 @@ with st.container(horizontal=True) as no_deselect:
 
     twilio_balance = st.container()
     twilio_balance.text("Twilio Balance")
-    tw_balance = random.randrange(0, 20)
+    tw_balance = get_account_balance()
     balance_thresh = {
-        5: "red",
-        10: "yellow",
-        20: "green"
+        5.0: "red",
+        10.0: "yellow",
+        20.0: "green"
     }
     balance_icon = {
         "red": ":material/exclamation:",
         "green": ":material/check:",
         "yellow": ":material/warning:"
     }
-    if tw_balance < min(list(balance_thresh.keys())):
-        tw_col = "red"
+
+    if tw_balance is None:
+        twilio_balance.badge("Unable to retrieve balance", color="red",
+                             icon=balance_icon.get("red"))
     else:
-        for thresh in reversed(list(balance_thresh.keys())):
-            if tw_balance // thresh:
-                tw_col = balance_thresh.get(thresh, "red")
-                break
-    twilio_balance.badge(f"£{tw_balance}", color=tw_col,
-                         icon=balance_icon.get(tw_col, "red"))
+        if tw_balance < min(list(balance_thresh.keys())):
+            tw_col = "red"
+        else:
+            for thresh in reversed(list(balance_thresh.keys())):
+                if tw_balance // thresh:
+                    tw_col = balance_thresh.get(thresh, "red")
+                    break
+        twilio_balance.badge(f"£{tw_balance}", color=tw_col,
+                             icon=balance_icon.get(tw_col, "red"))
 
     period_spec = period.split(" ")
     # work backwards so that times align - although
