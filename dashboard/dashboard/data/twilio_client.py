@@ -60,7 +60,24 @@ def generate_monthly_call_history() -> pd.DataFrame:
     })
 
 
+def get_account_balance() -> float | None:
+    """
+    https://www.twilio.com/docs/iam/api/account#fetch-an-account-resource
+    """
+    import json
+    try:
+        account = client.api.v2010.accounts(
+            account_sid
+        ).fetch()
+
+        return float(account.balance.fetch().balance)
+    except (TwilioException, TwilioRestException) as e:
+        warnings.warn("Twilio: unable to access account balance: ", e)
+        return None
+
+
 if __name__ == "__main__":
     print(
         generate_monthly_call_history().head()
     )
+    print(get_account_balance())
