@@ -160,7 +160,7 @@ with st.container(horizontal=True) as no_deselect:
         duration = period_spec.pop("month")
         period_spec["months"] = duration
 
-    print(calls_data["start_time"].iloc[-1] + DateOffset(**period_spec))
+    # print(calls_data["start_time"].iloc[-1] + DateOffset(**period_spec))
 
     call_data_period = calls_data.copy()
     call_data_period = call_data_period.loc[
@@ -176,7 +176,7 @@ with st.container(horizontal=True, border=True):
     )
     st.metric(
         label="Total Cost",
-        value=f"£{metrics.total_cost(call_data_period)}"
+        value=f"£{metrics.total_cost(call_data_period):.2f}"
     )
     st.metric(
         label="Total Transferred",
