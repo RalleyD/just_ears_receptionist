@@ -16,3 +16,5 @@ dashboard/**/__pycache__/
 dashboard/.env
 
 dashboard/*.egg-info/
+
+.env
