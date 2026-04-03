@@ -3,9 +3,10 @@ import { config } from "./config";
 import { executeFunctionCall } from "./functions";
 import { createTwiMlTransfer } from "./twilio-handler";
 import twilio from "twilio";
-import { except } from "drizzle-orm/mysql-core";
+import { getAgentMode, registerSession, AgentMode } from "./runtime-config";
 
-const SYSTEM_MESSAGE = `You are Justin, a professional medical receptionist for Just Ears Hearing, an ear care clinic specializing in microsuction ear wax removal.
+// template literal with backticks for multi-line text - preserves newlines literally
+const BASE_SYSTEM_MESSAGE = `You are Justin, a professional medical receptionist for Just Ears Hearing, an ear care clinic specializing in microsuction ear wax removal.
 IDENTITY
     • ALWAYS refer to the business as "Just Ears" or "Just Ears Clinic" 
     • CQC regulated, GP recommended, 95% excellent feedback 
@@ -117,58 +118,85 @@ KEY RULES
     6. Opening hours Monday-Friday 9 AM-5 PM only 
     7. NO medical advice or diagnosis 
     8. Convert UK times to UTC for functions 
+
 `
-const FUNCTION_DEFINITIONS = [
-  {
-    type: "function",
-    name: "get_clinic_information",
-    description:
-      "Retrieve information about Just Ears Clinic services, procedures, locations, or pricing from the website. Use FAQs if the query matches none of the other topics",
-    parameters: {
-      type: "object",
-      properties: {
-        topic: {
-          type: "string",
-          enum: [
-            "microsuction",
-            "hearing-tests",
-            "custom-ear-plugs",
-            "locations",
-            "services",
-            "faqs",
-            "clinics",
-          ],
-          description: "The information topic to retrieve. Use 'clinics' to provide specific information about a requested clinic location",
-        },
-        clinic_name: {
-          type: "string",
-          enum: [
-              'cosham', 'bursledon', 'bordon', 'poole', 'orpington', 'tonbridge', 'salisbury-clinic', 'ringwood-clinic', 'horndean-clinic', 'winchester-clinic', 'gosport-clinic', 'chichester-clinic', 'portssolent-clinic', 'guildford-clinic', 'emsworth-clinic'
+
+const OUT_OF_OFFICE = `OUT OF OFFICE MODE
+The office is currently unavailable. You CANNOT transfer calls to staff under any circumstances.
+Do NOT offer to transfer the caller or suggest calling back to speak to someone.
+Assist with general queries only: locations, services, pricing, and hours.
+If the caller needs to book or speak to a person, inform them the office is unavailable and invite them to call back Monday to Friday 9AM to 5PM.
+`
+
+function buildSystemMessage(mode: AgentMode): string {
+  if (mode == 'out-of-office') {
+    return BASE_SYSTEM_MESSAGE + OUT_OF_OFFICE;
+  }
+  return BASE_SYSTEM_MESSAGE;
+}
+
+function buildFunctionDefinitions(mode: AgentMode) {
+  const FUNCTION_DEFINITIONS = [
+    {
+      type: "function",
+      name: "get_clinic_information",
+      description:
+        "Retrieve information about Just Ears Clinic services, procedures, locations, or pricing from the website. Use FAQs if the query matches none of the other topics",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: {
+            type: "string",
+            enum: [
+              "microsuction",
+              "hearing-tests",
+              "custom-ear-plugs",
+              "locations",
+              "services",
+              "faqs",
+              "clinics",
             ],
-          description: "The specific clinic name. Only required when the specified topic is 'clinics'. Use the clinic URL slug (e.g., 'salisbury-clinic', 'poole')",
-        }
-      },
-      required: ["topic"],
-    },
-  },
-  {
-    type: "function",
-    name: "transfer_to_receptionist",
-    description:
-      "Transfer the call to a human receptionist when the AI cannot handle the query or the patient requests to speak to a human.",
-    parameters: {
-      type: "object",
-      properties: {
-        reason: {
-          type: "string",
-          description:
-            "Reason for transfer (e.g., 'patient request', 'agent unable to handle query', 'emergency')",
+            description: "The information topic to retrieve. Use 'clinics' to provide specific information about a requested clinic location",
+          },
+          clinic_name: {
+            type: "string",
+            enum: [
+                'cosham', 'bursledon', 'bordon', 'poole', 'orpington', 'tonbridge', 'salisbury-clinic', 'ringwood-clinic', 'horndean-clinic', 'winchester-clinic', 'gosport-clinic', 'chichester-clinic', 'portssolent-clinic', 'guildford-clinic', 'emsworth-clinic'
+              ],
+            description: "The specific clinic name. Only required when the specified topic is 'clinics'. Use the clinic URL slug (e.g., 'salisbury-clinic', 'poole')",
+          }
         },
+        required: ["topic"],
       },
-      required: ["reason"],
     },
-  },
-];
+    {
+      type: "function",
+      name: "transfer_to_receptionist",
+      description:
+        "Transfer the call to a human receptionist when the AI cannot handle the query or the patient requests to speak to a human.",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            description:
+              "Reason for transfer (e.g., 'patient request', 'agent unable to handle query', 'emergency')",
+          },
+        },
+        required: ["reason"],
+      },
+    },
+  ];
+
+  if (mode == 'out-of-office') {
+    // filter with inline anonymous function - fn == parameter name, => "this function returns",
+    // `fn.name !== 'transfer_to_receptionist'` - the expression to evaluate.
+    // !== strict evaluation (check type and value, don't coerce types)
+    return FUNCTION_DEFINITIONS.filter(fn => fn.name !== 'transfer_to_receptionist');
+  }
+
+  return FUNCTION_DEFINITIONS;
+}
 
 export function handleConnection(twilioWs: WebSocket) {
   // various connection state variables
@@ -177,23 +205,17 @@ export function handleConnection(twilioWs: WebSocket) {
   let twCallSid: string | null = null;
   let transferPending: object | null = null;
   let caller_number: string | null = null;
+  let sessionInitialised: boolean = false;
 
-  // Connect to OpenAI Realtime API
-  openaiWs = new WebSocket(config.openai.realtimeUrl, {
-    headers: {
-      Authorization: `Bearer ${config.openai.apiKey}`,
-    },
-  });
+  // current snapshot of agent mode for this node
+  const currentMode: AgentMode = getAgentMode();
 
-  openaiWs.on("open", () => {
-    console.log("Connected to OpenAI Realtime API");
-
-    // Configure session
-    const sessionUpdate = {
+  const sessionUpdate = (newMode: AgentMode) => {
+    let sessionUpdateMsg: object = {
       type: "session.update",
       session: {
         output_modalities: ["audio"],
-        instructions: SYSTEM_MESSAGE,
+        instructions: buildSystemMessage(newMode),
         audio: {
           input: {
             format: {
@@ -207,14 +229,36 @@ export function handleConnection(twilioWs: WebSocket) {
             voice: "ballad",
           },
         },
-        tools: FUNCTION_DEFINITIONS,
+        tools: buildFunctionDefinitions(newMode),
         tool_choice: "auto",
         type: "realtime",
       },
     };
 
-    openaiWs!.send(JSON.stringify(sessionUpdate));
-    console.log("Session configured");
+    if (openaiWs?.readyState === WebSocket.OPEN) {
+      openaiWs!.send(JSON.stringify(sessionUpdateMsg));
+      console.log("Session configured");
+    }
+  };
+
+  // register observer for handling mode changes across sessions
+  // capture deregister function for session close
+  const unregister = registerSession((newMode: AgentMode) => {
+    // update session to this connection's openaiWs, carry the new state through
+    sessionUpdate(newMode);
+  });
+
+  // Connect to OpenAI Realtime API
+  openaiWs = new WebSocket(config.openai.realtimeUrl, {
+    headers: {
+      Authorization: `Bearer ${config.openai.apiKey}`,
+    },
+  });
+
+  openaiWs.on("open", () => {
+    console.log("Connected to OpenAI Realtime API");
+    // Configure session
+    sessionUpdate(currentMode);
   });
 
   // Handle OpenAI messages
@@ -231,17 +275,20 @@ export function handleConnection(twilioWs: WebSocket) {
         case "session.updated":
           console.log("Session updated successfully");
 
-          // Trigger realtime AI to speak first with greeting
-          openaiWs.send(
-            JSON.stringify({
-              type: "response.create",
-              response: {
-                output_modalities: ["audio"],
-                instructions:
-                  "Greet the caller IN ENGLISH with your introduction as specified in the GREETING section of the system instructions. The conversation must be conducted entirely in English.",
-              },
-            }),
-          );
+          // Trigger realtime AI to speak first with greeting - first time only
+          if (!sessionInitialised) {
+            sessionInitialised = true;
+            openaiWs.send(
+              JSON.stringify({
+                type: "response.create",
+                response: {
+                  output_modalities: ["audio"],
+                  instructions:
+                    "Greet the caller IN ENGLISH with your introduction as specified in the GREETING section of the system instructions. The conversation must be conducted entirely in English.",
+                },
+              }),
+            );
+          }
           // TODO refactor sendOpenAiResponse(openaiWs: WebSocket, instruction: string)
           break;
 
@@ -380,6 +427,8 @@ export function handleConnection(twilioWs: WebSocket) {
 
   openaiWs.on("close", () => {
     console.log("Disconnected from OpenAI Realtime API");
+    // call unregister function for this session
+    unregister();
   });
 
   // Handle Twilio messages
