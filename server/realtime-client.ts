@@ -207,9 +207,6 @@ export function handleConnection(twilioWs: WebSocket) {
   let caller_number: string | null = null;
   let sessionInitialised: boolean = false;
 
-  // current snapshot of agent mode for this node
-  const currentMode: AgentMode = getAgentMode();
-
   const sessionUpdate = (newMode: AgentMode) => {
     let sessionUpdateMsg: object = {
       type: "session.update",
@@ -241,7 +238,7 @@ export function handleConnection(twilioWs: WebSocket) {
     }
   };
 
-  // register observer for handling mode changes across sessions
+  // register observer with a callback for handling mode changes for this session
   // capture deregister function for session close
   const unregister = registerSession((newMode: AgentMode) => {
     // update session to this connection's openaiWs, carry the new state through
@@ -257,8 +254,9 @@ export function handleConnection(twilioWs: WebSocket) {
 
   openaiWs.on("open", () => {
     console.log("Connected to OpenAI Realtime API");
-    // Configure session
-    sessionUpdate(currentMode);
+    // Configure session - get agent, fresh at the moment we need it
+    // avoids race where mode might change while the socket is being set up
+    sessionUpdate(getAgentMode());
   });
 
   // Handle OpenAI messages
