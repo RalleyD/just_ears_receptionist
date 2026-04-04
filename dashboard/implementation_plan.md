@@ -71,16 +71,25 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 **Verify:** `streamlit run app.py` — full dashboard renders with dummy data, controls work, chart toggles between bar/line.
 
 **step 1e - Table tab** (`tables.py`):
+
+Status: Complete
+
 - keeping the same period selector 
 - chart tab - "call log" tab
 - - the table shows the pure Twilio data for the specified period
 - - Does streamlit provide a table where we can filter and search?
 
 **step 1f - call heatmap** (```charts/heatmap.py```):
+
+Status: Complete
+
 - create a dropdown of dates (populated with dateutil for a valid month range, past 1 days, past 7 days)
 - calendar day (Y-axis), hour (x axis): total the call volume each hour and colour the heatmap based on the range (red upper quartile, blue lower quartile, yellow interquartile)
 
 **step 1g - credit widget**
+
+Status: In Review (needs refinement)
+
 - Traffic light widget - Remaining Twilio Credit (Green > $20, Yellow < $10, Red < $5)
 - figure out the nicest place to put this for now.
 ---
@@ -90,6 +99,19 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 **You'll learn:** Twilio Python SDK, `@st.cache_data` for API caching, python-dotenv
 
 **Create:** `dashboard/dashboard/data/twilio_client.py`
+
+**Authentication**
+
+- load dotenv (local)
+- load os.environ (Remote)
+- else - use dummy data and persist warning message on UI.
+
+**Data layer responsibilities**
+
+- Shall obtain the longest period defined by the application
+  - once, and cached up-front (minimise API calls)
+- Twilio ```price``` field - a negative string float or `None`
+  - convert to positive float for abstraction layer (metrics.py)
 
 **Key steps:**
 1. `fetch_calls(days: int) -> pd.DataFrame` — uses `client.calls.list()` with date filters
@@ -117,7 +139,7 @@ Credentials reuse existing env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`.
 2. Add `st.caption()` showing last-refreshed time
 3. Add `st.divider()` between sections
 4. Fine-tune chart margins, hover labels, axis formatting
-5. match colour scheme and font of just-ears website (vibe code this)
+5. match colour scheme and font of just-ears website (vibe code this). Status: Complete
 
 ### Colour Hierarchy
 Role	Colour	Hex	Used For
@@ -138,9 +160,72 @@ Footer	Dark/black	Dark bg, white text	Footer section
 Runtime file (file-driven runtime config) - each time the a node is instantiated (justin called) - the file is
 read so Justin knows what state to operate in during calls:
 
-buttons:
+### buttons (streamlit app):
 
 - out of office - preamble that "i can't take bookings but i can help with queries."
+  - button complete in sidebar
+  - TODO, wiring.
+
+### Architecture
+
+```
+Dashboard segmented_control
+        |
+        | POST /api/agent-mode { mode }
+        v
+Node.js routes.ts → setAgentMode()
+        |
+        | fan-out to registered callbacks
+        v
+runtime-config.ts observer registry
+        |
+        | callback per active session
+        v
+realtime-client.ts → re-sends session.update to OpenAI WebSocket
+```
+
+1. [complete] A new runtime-config.ts module holds in-memory mode state and an observer registry. Module-level singletons in Node.js are shared across all imports in the process — this is the correct pattern for process-wide shared state without a database. Observer pattern - `setAgentMode` calls all registered callbacks when the mode changes.
+
+
+2. [complete] `server/routes.ts` : add POST /api/agent-mode before the createServer(app) call.
+
+3. [complete] `server/realtime-client.ts` 
+   1. import functionality from `runtime-config.js`
+   2. builder function - extend out of office mode to base system message:
+   
+   ```
+   OUT OF OFFICE MODE
+    The office is currently unavailable. You CANNOT transfer calls to staff under any circumstances.
+    Do NOT offer to transfer the caller or suggest calling back to speak to someone.
+    Assist with general queries only: locations, services, pricing, and hours.
+    If the caller needs to book or speak to a person, inform them the office is unavailable and invite them to call back Monday–Friday 9AM–5PM.
+   ```
+   3. builder function - return either all function definitions constant or filter out transfer function.
+   4. builder function - create session update json
+   5. inside `handleConnection` - register observer before the `open` handler.
+   6. on `open` use `getAgentMode()` and session update builder function
+   7. on `close` - cleanup, unregister from observer.
+
+4. [complete] streamlit app - ensures on-change only POST, no spurious http request on page load.
+   1. get server base url from environment or localhost if not present
+   2. segmented control - updates `agent_mode` `st.session_state`
+   3. if the agent mode changes send POST request to `agent-mode` endpoint.
+
+### Verification [complete]
+
+- Start server: npm run dev (or equivalent)
+- Open dashboard, confirm "Call Transfer" is default
+- curl -X POST localhost:5000/api/agent-mode -H 'Content-Type: application/json' -d '{"mode":"out-of-office"}' → returns {"mode":"out-of-office"}
+- then, GET - confirms the mode changed:
+  - `curl localhost:5000/api/agent-mode`
+- POST invalid value (expected return 400)
+  `curl -x POST localhost:5000/api/agent-mode \
+  -H 'Content-Type: application/json' \
+  -d '{"mode":"banana"}'
+- Toggle to "Out Of Office" in dashboard sidebar → toast confirms, server log shows mode change
+- Make a test call — agent should not offer transfer; transfer_to_receptionist function should not appear in console logs
+- Toggle back to "Call Transfer" — mode reverts, next call should transfer normally
+- Active call test: Place a test call, leave it active, toggle mode — active call should receive updated session instructions without dropping
 
 ---
 
