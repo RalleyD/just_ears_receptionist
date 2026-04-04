@@ -23,6 +23,7 @@ from dashboard.data.twilio_client import generate_monthly_call_history, get_acco
 import dashboard.data.metrics as metrics
 from dashboard.charts.volume import create_call_volume_chart
 from dashboard.charts.heatmap import create_hourly_heatmap
+from dashboard.client.http_client import set_agent_mode, get_agent_mode
 
 st.set_page_config(
     page_title="Just Ears - Call Dashboard",
@@ -87,13 +88,38 @@ def get_call_history() -> pd.DataFrame:
     return generate_monthly_call_history()
 
 
+def update_agent_mode_cb():
+    if st.session_state.agent_mode is not None and \
+            st.session_state.agent_mode != st.session_state.agent_state:
+        result = set_agent_mode(st.session_state.agent_mode)
+
+        if result["success"]:
+            st.session_state.agent_state = st.session_state.agent_mode
+            msg = result["response"]
+        else:
+            msg = "Current Agent Mode: " + st.session_state.agent_state
+
+        st.toast(msg)
+
+
+if 'agent_state' not in st.session_state:
+    # intialisation - aligns with initial runtime-config state
+    # keep aligned with segmented_control's default state to prevent
+    # POST firing on reload
+    current = get_agent_mode()
+    st.session_state['agent_state'] = current
+    st.session_state['agent_mode'] = current
+
 with st.sidebar:
     st.segmented_control(
         label="Agent Mode",
         options=["Call Transfer",
                  "Out Of Office"],
+        # allows deselection -> None
         selection_mode="single",
-        default="Call Transfer",
+        # keep aligned with agent_state's initialisation to prevent
+        # POST firing on reload
+        default=get_agent_mode(),
         help=("Set the Agent's operating mode: \n\n"
               "Call Transfer: "
               "The agent will transfer patient calls "
@@ -102,8 +128,11 @@ with st.sidebar:
               "The agent will inform users that only "
               "general queries can be handled at this time. "
               "Calls will not be transferred"
-              )
+              ),
+        key="agent_mode",
+        on_change=update_agent_mode_cb
     )
+
 
 with st.container(horizontal=True) as no_deselect:
     calls_data = get_call_history()
