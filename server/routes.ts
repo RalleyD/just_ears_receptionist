@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
 import { handleIncomingCall, handleMediaStream } from './twilio-handler';
 import { handleConnection } from './realtime-client';
-import { setAgentMode, AgentMode } from "./runtime-config";
+import { setAgentMode, getAgentMode } from "./runtime-config";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
@@ -39,6 +39,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { status: 'Agent mode changed to: ' + mode.toString() }
       );
     }
+  })
+
+  app.get('/api/agent-mode', (req, res) => {
+    return res.status(200).json({
+      mode: getAgentMode()
+    });
   })
 
   // wrap express app (passed by ref) in a Node.js HTTP server - 
