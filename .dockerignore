@@ -1,0 +1,11 @@
+.env
+node_modules
+doc
+attached_assets
+.claude
+.vscode
+.git
+.gitignore
+.DS_Store
+dashboard
+client
