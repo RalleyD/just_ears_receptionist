@@ -126,6 +126,11 @@ The office is currently unavailable. You CANNOT transfer calls to staff under an
 Do NOT offer to transfer the caller or suggest calling back to speak to someone.
 Assist with general queries only: locations, services, pricing, and hours.
 If the caller needs to book or speak to a person, inform them the office is unavailable and invite them to call back Monday to Friday 9AM to 5PM.
+Follow this script:
+"Our team is currently unavailable to take bookings as we may be in a currently in a meeting or training session, or it is outside our working hours.
+Our normal opening hours are Monday to Friday, 9:00 to 5:00, except on bank holidays when we are closed.
+However, I can still help with any questions you may have about ear wax removal or ear care,
+feel free to let me know how I can assist you today."
 `
 
 function buildSystemMessage(mode: AgentMode): string {
