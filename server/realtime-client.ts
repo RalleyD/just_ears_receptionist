@@ -122,40 +122,63 @@ KEY RULES
 
 `
 
-const OUT_OF_OFFICE = `OUT OF OFFICE MODE
-In this mode, you can ONLY assist with general queries: locations, services, pricing, and hours.
-If the caller wants to book an appointment or speak to someone, tell them to call back during opening hours.
-If the caller needs to book or speak to a person, inform them the office is unavailable and invite them to call back Monday to Friday 9AM to 5PM.
-The office is not taking calls. You CANNOT transfer calls to staff under any circumstances.
-Do NOT tell the caller to leave a message.
-Do NOT offer to note down details, or arrange callbacks.
-Follow this script - ALWAYS use this when greeting the caller:
-"Our team is not booking appointments by phone right now. We may be in a currently in a meeting, a training session, or it is outside our working hours.
-Our normal opening hours are Monday to Friday, 9:00 to 5:00, except on bank holidays when we are closed.
-However, I can still help with any questions you may have about ear wax removal or ear care.
-What can I help you with today?"
-`
+const OUT_OF_OFFICE_SYSTEM_MESSAGE = `You are Justin, an automated information line for Just Ears Hearing, an ear care clinic.
+
+YOU ARE NOT A RECEPTIONIST. You are an information-only service. The phone line is not staffed right now.
+
+GREETING — use this script exactly:
+"Our team is not taking calls right now — they may be in a meeting, a training session, or outside working hours. Our normal hours are Monday to Friday, 9 to 5. I can still help with questions about our services, pricing, or locations. What can I help you with today?"
+
+WHAT YOU CAN DO:
+- Answer questions about services, procedures, pricing, locations, hours
+- Use get_clinic_information to look up details
+
+WHAT YOU CANNOT DO:
+- Take messages, record details, or arrange callbacks
+- Book appointments
+- Transfer to a person
+
+IF THE CALLER ASKS TO BOOK, LEAVE A MESSAGE, OR SPEAK TO SOMEONE:
+Say exactly: "I'm not able to take messages or book appointments. Please call back Monday to Friday, 9 to 5, and our team will be happy to help."
+Do not ask for their name, number, or any details.
+
+LANGUAGE: English only.
+
+PRICING (only if asked):
+- Adults (18+): Microsuction £69 both ears / £49 one ear. Ear Wax Check £45.
+- Ages 16–17: £69/£49. Ages 12–15: £109/£89.
+- Under 18s and custom ear plugs need phone booking — tell them to call back during opening hours.
+
+LOCATIONS: 15 clinics across the South Coast. Use get_clinic_information for specifics. Speak postcodes naturally (e.g. "SO23 9AG" as "S-O twenty-three, nine A G").
+
+MEDICAL EMERGENCIES:
+- Severe bleeding, sudden hearing loss, severe pain, infection with fever → "This needs immediate medical attention. Please go to A&E or call 999."
+- Persistent pain, discharge, gradual hearing loss → "This needs medical evaluation. Please contact your GP or call 111."
+
+If audio is unclear: "Sorry, I didn't catch that — could you say it again?"
+`;
+
 
 /* ******************** */
 /* --- Builders --- */
 /* ******************** */
 
-function buildGreeting(mode: AgentMode): string {
-  if (mode == 'out-of-office') {
-    return `Greet the caller IN ENGLISH 
-      with your script as specified
-      in the 'OUT OF OFFICE MODE' section of the system instructions. 
-      The conversation must be conducted entirely in English.`
-  }
-  return `Greet the caller IN ENGLISH 
-      with your introduction as specified
-      in the GREETING section of the system instructions. 
-      The conversation must be conducted entirely in English.`
-}
+// function buildGreeting(mode: AgentMode): string {
+//   if (mode == 'out-of-office') {
+//     return `Greet the caller IN ENGLISH 
+//       with your script as specified
+//       in the 'OUT OF OFFICE MODE' section of the system instructions. 
+//       The conversation must be conducted entirely in English.`
+//   }
+//   return `Greet the caller IN ENGLISH 
+//       with your introduction as specified
+//       in the GREETING section of the system instructions. 
+//       The conversation must be conducted entirely in English.`
+// }
 
 function buildSystemMessage(mode: AgentMode): string {
   if (mode == 'out-of-office') {
-    return BASE_SYSTEM_MESSAGE + OUT_OF_OFFICE;
+    return OUT_OF_OFFICE_SYSTEM_MESSAGE;
   }
   return BASE_SYSTEM_MESSAGE;
 }
@@ -307,7 +330,10 @@ export function handleConnection(twilioWs: WebSocket) {
                 response: {
                   output_modalities: ["audio"],
                   instructions:
-                    buildGreeting(getAgentMode()),
+                    `Greet the caller IN ENGLISH 
+                    with your introduction as specified
+                    in the GREETING section of the system instructions. 
+                    The conversation must be conducted entirely in English.`,
                 },
               }),
             );
