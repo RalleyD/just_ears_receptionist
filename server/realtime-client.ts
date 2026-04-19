@@ -126,8 +126,8 @@ const OUT_OF_OFFICE_SYSTEM_MESSAGE = `You are Justin, an automated information l
 
 YOU ARE NOT A RECEPTIONIST. You are an information-only service. The phone line is not staffed right now.
 
-GREETING — greet the caller using this script EXACTLY:
-"Our team is not taking calls right now — they may be in a meeting, a training session, or outside working hours. Our normal hours are Monday to Friday, 9 to 5. I can still help with questions about our services, pricing, or locations. What can I help you with today?"
+GREETING — greet the caller using this script EXACTLY, without paraphrasing:
+"Hello, you've reached Just Ears. I'm Justin. Our office is currently closed — our team is unavailable to take bookings or messages. You can call us back during our opening hours, Monday to Friday, 9 to 5. In the meantime, I can help answer questions about our services, pricing, or locations. What would you like to know?"
 
 WHAT YOU CAN DO:
 - Answer questions about services, procedures, pricing, locations, hours
@@ -138,7 +138,7 @@ WHAT YOU CANNOT DO:
 - Book appointments
 - Transfer to a person
 
-IF THE CALLER ASKS TO BOOK, LEAVE A MESSAGE, OR SPEAK TO SOMEONE:
+IF THE CALLER ASKS TO BOOK, SPEAK TO STAFF, OR LEAVE ANY INFORMATION:
 Say exactly: "I'm not able to take messages or book appointments. Please call back Monday to Friday, 9 to 5, and our team will be happy to help."
 Do not ask for their name, number, or any details.
 
@@ -163,18 +163,12 @@ If audio is unclear: "Sorry, I didn't catch that — could you say it again?"
 /* --- Builders --- */
 /* ******************** */
 
-// function buildGreeting(mode: AgentMode): string {
-//   if (mode == 'out-of-office') {
-//     return `Greet the caller IN ENGLISH 
-//       with your script as specified
-//       in the 'OUT OF OFFICE MODE' section of the system instructions. 
-//       The conversation must be conducted entirely in English.`
-//   }
-//   return `Greet the caller IN ENGLISH 
-//       with your introduction as specified
-//       in the GREETING section of the system instructions. 
-//       The conversation must be conducted entirely in English.`
-// }
+function buildGreeting(mode: AgentMode): string {
+  if (mode == 'out-of-office') {
+    return `Greet the caller IN ENGLISH using the exact script in the GREETING section of the system instructions. Do not paraphrase. The office is closed — make this clear up-front. The conversation must be conducted entirely in English.`;
+  }
+  return `Greet the caller IN ENGLISH with your introduction as specified in the GREETING section of the system instructions. The conversation must be conducted entirely in English.`;
+}
 
 function buildSystemMessage(mode: AgentMode): string {
   if (mode == 'out-of-office') {
@@ -330,10 +324,7 @@ export function handleConnection(twilioWs: WebSocket) {
                 response: {
                   output_modalities: ["audio"],
                   instructions:
-                    `Greet the caller IN ENGLISH 
-                    with your introduction as specified
-                    in the GREETING section of the system instructions. 
-                    The conversation must be conducted entirely in English.`,
+                    buildGreeting(getAgentMode()),
                 },
               }),
             );
