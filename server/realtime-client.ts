@@ -161,7 +161,7 @@ If audio is unclear: "Sorry, I didn't catch that — could you say it again?"
 
 function buildGreeting(mode: AgentMode): string {
   if (mode == 'out-of-office') {
-    return `Greet the caller IN ENGLISH using the exact script in the GREETING section of the system instructions. Do not paraphrase. The office is closed — make this clear up-front. The conversation must be conducted entirely in English.`;
+    return `Using the exact script in the GREETING section of the system instructions, greet the caller IN ENGLISH . Do not paraphrase. The office is closed — make this clear up-front. The conversation must be conducted entirely in English.`;
   }
   return `Greet the caller IN ENGLISH with your introduction as specified in the GREETING section of the system instructions. The conversation must be conducted entirely in English.`;
 }
