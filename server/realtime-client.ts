@@ -151,10 +151,6 @@ PRICING (only if asked):
 
 LOCATIONS: 15 clinics across the South Coast. Use get_clinic_information for specifics. Speak postcodes naturally (e.g. "SO23 9AG" as "S-O twenty-three, nine A G").
 
-MEDICAL EMERGENCIES:
-- Severe bleeding, sudden hearing loss, severe pain, infection with fever → "This needs immediate medical attention. Please go to A&E or call 999."
-- Persistent pain, discharge, gradual hearing loss → "This needs medical evaluation. Please contact your GP or call 111."
-
 If audio is unclear: "Sorry, I didn't catch that — could you say it again?"
 `;
 
