@@ -11,7 +11,7 @@ def create_hourly_heatmap(call_data_period: pd.DataFrame) -> go.Figure:
     hourly_count_df = call_data_period.loc[:, ["start_time"]].groupby(
         pd.Grouper(key="start_time",
                    axis=0,
-                   freq="H")
+                   freq="h")
     ).size().to_frame(name="count")
 
     print(hourly_count_df.head())
