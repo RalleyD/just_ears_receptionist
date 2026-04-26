@@ -8,7 +8,7 @@ dependencies = [
     "plotly>=5.24.0",
     "twilio>=9.0.0",
     "python-dotenv>=1.0.0",
-    "pandas>=2.2.0",
+    "pandas<=2.2.3",
     "requests",
 ]
 
