@@ -24,7 +24,7 @@ def total_cost(df: pd.DataFrame) -> float:
     # from twilio, call costs come as a negative string float (None if empty)
     prices = df.loc[:, "price"]
     prices = prices.fillna(0.0)
-    prices = -prices.astype(float)
+    prices = prices.astype(float)
     return prices.sum()
 
 

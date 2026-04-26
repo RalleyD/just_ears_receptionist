@@ -22,7 +22,7 @@ except Exception as e:
 
 def generate_monthly_call_history() -> pd.DataFrame:
     end_time = datetime.now()
-    start_time = end_time + relativedelta(months=-1)
+    start_time = end_time + relativedelta(months=-2)
 
     try:
         calls = client.calls.list(
@@ -38,12 +38,15 @@ def generate_monthly_call_history() -> pd.DataFrame:
     status = []
     parent_call_sid = []
     price = []
+    duration = []
     for record in calls:
         start_time.append(record.start_time)
+        duration.append("0" if record.duration == "" else record.duration)
         call_sid.append(record.sid)
         parent_call_sid.append(record.parent_call_sid)
         status.append(record.status)
-        price.append(record.price)
+        price_str = "0.0" if record.price is None else record.price.lstrip('-')
+        price.append(price_str)
 
     # dti_final
     # once all call records collected ->
@@ -53,6 +56,7 @@ def generate_monthly_call_history() -> pd.DataFrame:
     # parse calls into a dict -> to frame
     return pd.DataFrame({
         "start_time": dti_final,
+        "duration_seconds": duration,
         "call_sid": call_sid,
         "status": status,
         "parent_call_sid": parent_call_sid,
