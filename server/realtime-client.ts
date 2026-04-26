@@ -155,7 +155,7 @@ function buildGreeting(mode: AgentMode): string {
   if (mode === 'out-of-office') {
     return `Open the call by speaking this exact script in English. Do not paraphrase, summarise, or change the wording:
 
-    "Hello, you've reached Just Ears Hearing. Our office is currently closed — our team is unavailable to take bookings or messages. You can call us back during our opening hours, Monday to Friday, 9 to 5. In the meantime, I can help answer questions about our services, pricing, or locations. What would you like to know?"
+    "Hello, you've reached Just Ears Hearing. Our team is currently unavailable to take bookings as we may be in a meeting, training session, or it is outside our working hours. You can still make a booking on our website: justears.co.uk. In the meantime, I can help answer questions about our services, pricing, or locations. What would you like to know?"
 
     Speak the entire script before waiting for a response.`;
   }
