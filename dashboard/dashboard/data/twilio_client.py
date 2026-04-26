@@ -28,7 +28,6 @@ def generate_monthly_call_history() -> pd.DataFrame:
         calls = client.calls.list(
             start_time_after=start_time,
             end_time_before=end_time,
-            limit=31
         )
     except (TwilioException, TwilioRestException) as e:
         warnings.warn(f"Twilio API request failed, using dummy data: {e}")
