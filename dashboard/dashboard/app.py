@@ -24,6 +24,7 @@ import dashboard.data.metrics as metrics
 from dashboard.charts.volume import create_call_volume_chart
 from dashboard.charts.heatmap import create_hourly_heatmap
 from dashboard.client.http_client import set_agent_mode, get_agent_mode
+from dashboard.data.openai_client import get_openai_credit_balance
 
 st.set_page_config(
     page_title="Just Ears - Call Dashboard",
@@ -137,66 +138,101 @@ with st.sidebar:
 with st.container(horizontal=True) as no_deselect:
     calls_data = get_call_history()
 
-    period = st.radio(
-        "Period",
-        ["7 Days", "14 Days", "1 Month"],
-        index=2,
-        horizontal=True
-    )
+    col1, col2, col3 = st.columns([2, 2, 2])
 
-    chart_type: str = st.radio(
-        "Chart Type",
-        ["Bar", "Line"],
-        index=0,
-        horizontal=True
-    )
+    with col1:
+        period = st.radio(
+            "Period",
+            ["7 Days", "14 Days", "1 Month"],
+            index=2,
+            horizontal=True
+        )
 
-    twilio_balance = st.container()
-    twilio_balance.text("Twilio Balance")
-    tw_balance = get_account_balance()
-    balance_thresh = {
-        5.0: "red",
-        10.0: "yellow",
-        20.0: "green"
-    }
-    balance_icon = {
-        "red": ":material/exclamation:",
-        "green": ":material/check:",
-        "yellow": ":material/warning:"
-    }
+    with col2:
+        chart_type: str = st.radio(
+            "Chart Type",
+            ["Bar", "Line"],
+            index=0,
+            horizontal=True
+        )
 
-    if tw_balance is None:
-        twilio_balance.badge("Unable to retrieve balance", color="red",
-                             icon=balance_icon.get("red"))
-    else:
-        if tw_balance < min(list(balance_thresh.keys())):
-            tw_col = "red"
+    with col3:
+        # --- Twilio Balance Badge --- #
+        twilio_balance = st.container()
+        twilio_balance.text("Twilio Balance")
+        tw_balance = get_account_balance()
+        balance_thresh = {
+            5.0: "red",
+            10.0: "yellow",
+            20.0: "green"
+        }
+        balance_icon = {
+            "red": ":material/exclamation:",
+            "green": ":material/check:",
+            "yellow": ":material/warning:"
+        }
+
+        if tw_balance is None:
+            twilio_balance.badge("Unable to retrieve balance", color="red",
+                                 icon=balance_icon.get("red"))
         else:
-            for thresh in reversed(list(balance_thresh.keys())):
-                if tw_balance // thresh:
-                    tw_col = balance_thresh.get(thresh, "red")
-                    break
-        twilio_balance.badge(f"£{tw_balance}", color=tw_col,
-                             icon=balance_icon.get(tw_col, "red"))
+            if tw_balance < min(list(balance_thresh.keys())):
+                tw_col = "red"
+            else:
+                for thresh in reversed(list(balance_thresh.keys())):
+                    if tw_balance // thresh:
+                        tw_col = balance_thresh.get(thresh, "red")
+                        break
+            twilio_balance.badge(f"£{tw_balance}", color=tw_col,
+                                 icon=balance_icon.get(tw_col, "red"))
 
-    period_spec = period.split(" ")
-    # work backwards so that times align - although
-    # this isn't a dealbreakeras we can always .loc by YYYY-MM-DD only
-    period_spec = {period_spec[1].lower(): -int(period_spec[0])}
-    # setattr of dateoffset tuple[1], value[0]
+        # --- Agent Credit Badge --- #
+        ai_balance = st.container()
+        ai_balance.text("AI Credits")
+        ai_balance_flt = get_openai_credit_balance()
+        ai_balance_thresh = {
+            10.0: "red",
+            20.0: "yellow",
+            30.0: "green"
+        }
+        ai_balance_icon = {
+            "red": ":material/exclamation:",
+            "green": ":material/check:",
+            "yellow": ":material/warning:"
+        }
 
-    if "Month" in period:
-        duration = period_spec.pop("month")
-        period_spec["months"] = duration
+        if ai_balance_flt is None:
+            ai_balance.badge("Unable to retrieve balance", color="red",
+                             icon=balance_icon.get("red"))
+        else:
+            if ai_balance_flt < min(list(balance_thresh.keys())):
+                ai_col = "red"
+            else:
+                for credit_thresh in reversed(list(ai_balance_thresh.keys())):
+                    if ai_balance_flt // credit_thresh:
+                        ai_col = ai_balance_thresh.get(thresh, "red")
+                        break
+            ai_balance.badge(f"£{ai_balance_flt:.2f}", color=ai_col,
+                             icon=balance_icon.get(ai_col, "red"))
 
-    print(calls_data["start_time"].max() + DateOffset(**period_spec))
+        period_spec = period.split(" ")
+        # work backwards so that times align - although
+        # this isn't a dealbreakeras we can always .loc by YYYY-MM-DD only
+        period_spec = {period_spec[1].lower(): -int(period_spec[0])}
+        # setattr of dateoffset tuple[1], value[0]
 
-    call_data_period = calls_data.copy()
-    call_data_period = call_data_period.loc[
-        call_data_period["start_time"] >= call_data_period["start_time"].max() +
-        DateOffset(**period_spec),
-        call_data_period.columns
-    ]
+        if "Month" in period:
+            duration = period_spec.pop("month")
+            period_spec["months"] = duration
+
+        print(calls_data["start_time"].max() + DateOffset(**period_spec))
+
+        call_data_period = calls_data.copy()
+        call_data_period = call_data_period.loc[
+            call_data_period["start_time"] >= call_data_period["start_time"].max() +
+            DateOffset(**period_spec),
+            call_data_period.columns
+        ]
 
 with st.container(horizontal=True, border=True):
     st.metric(
