@@ -10,7 +10,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pandas<=2.2.3",
     "requests",
-    "openai>=1.0.0",
 ]
 
 [build-system]
