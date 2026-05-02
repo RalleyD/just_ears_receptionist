@@ -217,7 +217,7 @@ with st.container(horizontal=True) as no_deselect:
                     if ai_balance_flt // credit_thresh:
                         ai_col = ai_balance_thresh.get(credit_thresh, "red")
                         break
-            ai_balance.badge(f"£{ai_balance_flt:.2f}", color=ai_col,
+            ai_balance.badge(f"${ai_balance_flt:.2f}", color=ai_col,
                              icon=balance_icon.get(ai_col, "red"))
 
         period_spec = period.split(" ")
