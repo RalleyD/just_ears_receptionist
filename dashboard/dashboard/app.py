@@ -193,7 +193,7 @@ with st.container(horizontal=True) as no_deselect:
 
         # --- Agent Credit Badge --- #
         ai_balance = st.container()
-        ai_balance.text("AI Credits")
+        ai_balance.text("Monthly AI Usage")
         ai_balance_flt = get_ai_usage_cost()
         ai_balance_thresh = {
             30.0: "red",
