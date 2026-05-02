@@ -24,7 +24,7 @@ import dashboard.data.metrics as metrics
 from dashboard.charts.volume import create_call_volume_chart
 from dashboard.charts.heatmap import create_hourly_heatmap
 from dashboard.client.http_client import set_agent_mode, get_agent_mode
-from dashboard.data.openai_client import get_openai_credit_balance
+from dashboard.data.openai_client import get_monthly_usage_cost
 
 st.set_page_config(
     page_title="Just Ears - Call Dashboard",
@@ -87,6 +87,11 @@ st.title("Just Ears Call Dashboard")
 @st.cache_data
 def get_call_history() -> pd.DataFrame:
     return generate_monthly_call_history()
+
+
+@st.cache_data(ttl=3600)
+def get_ai_usage_cost() -> float | None:
+    return get_monthly_usage_cost()
 
 
 def update_agent_mode_cb():
@@ -189,11 +194,11 @@ with st.container(horizontal=True) as no_deselect:
         # --- Agent Credit Badge --- #
         ai_balance = st.container()
         ai_balance.text("AI Credits")
-        ai_balance_flt = get_openai_credit_balance()
+        ai_balance_flt = get_ai_usage_cost()
         ai_balance_thresh = {
-            10.0: "red",
+            30.0: "red",
             20.0: "yellow",
-            30.0: "green"
+            10.0: "green"
         }
         ai_balance_icon = {
             "red": ":material/exclamation:",
@@ -205,12 +210,12 @@ with st.container(horizontal=True) as no_deselect:
             ai_balance.badge("Unable to retrieve balance", color="red",
                              icon=balance_icon.get("red"))
         else:
-            if ai_balance_flt < min(list(balance_thresh.keys())):
-                ai_col = "red"
+            if ai_balance_flt < min(list(ai_balance_thresh.keys())):
+                ai_col = "green"
             else:
                 for credit_thresh in reversed(list(ai_balance_thresh.keys())):
                     if ai_balance_flt // credit_thresh:
-                        ai_col = ai_balance_thresh.get(thresh, "red")
+                        ai_col = ai_balance_thresh.get(credit_thresh, "red")
                         break
             ai_balance.badge(f"£{ai_balance_flt:.2f}", color=ai_col,
                              icon=balance_icon.get(ai_col, "red"))
