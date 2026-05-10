@@ -137,3 +137,8 @@ The worker should auto-deploy whenever changes to the worker are pushed on Git.
 ### Monitor logs
 
 ```npm run worker:tail```
+
+# TODOs
+
+- fix pagination in openai_client.py (see commits on branch 'draft-dashboard')
+   - n.b as of writing the openai python package just has admin.organization stubbed i.e no SDK yet.
