@@ -19,12 +19,7 @@ Node.js backend service that integrates OpenAI's Realtime API with Twilio for vo
 - `server/routes.ts` - Main route registration and WebSocket server setup
 
 ## Environment Variables
-All credentials are stored in Replit Secrets:
-- `OPENAI_API_KEY` - OpenAI API key for Realtime API access
-- `TWILIO_ACCOUNT_SID` - Twilio account identifier
-- `TWILIO_AUTH_TOKEN` - Twilio authentication token
-- `N8N_WEBHOOK_BASE_URL` - Base URL for N8N workflow webhooks
-- `PORT` - Server port (default: 5000)
+All credentials are stored in environment Secrets
 
 ## API Endpoints
 
@@ -76,7 +71,7 @@ To use this server, configure your Twilio phone number webhook:
 1. Go to Twilio Console → Phone Numbers
 2. Select your phone number
 3. Under "Voice & Fax", set "A CALL COMES IN" webhook to:
-   - `https://{your-replit-url}/api/incoming-call`
+   - `https://{your-webhook-url}/api/incoming-call`
    - Method: POST
 
 ## Running the Server
@@ -137,3 +132,9 @@ The worker should auto-deploy whenever changes to the worker are pushed on Git.
 ### Monitor logs
 
 ```npm run worker:tail```
+
+# Notice
+
+Commercial usage, other than the code owner and author, is prohibited.
+
+Don't be a tool... reach out to me first ;-)
