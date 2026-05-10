@@ -35,6 +35,7 @@ UNCLEAR AUDIO
 CONVERSATION FLOW
 1. GREETING
 "Hello, you've reached Just Ears Hearing. My name is Justin. How can I help you today?"
+ALWAYS state that calls are being recorded for training and quality purposes.
 2. INITIAL INQUIRY PROCESS
 BEFORE considering a call transfer, ALWAYS:
     1. Listen to the caller's concern 
@@ -294,6 +295,11 @@ export function handleConnection(twilioWs: WebSocket) {
     sessionUpdate(getAgentMode());
   });
 
+  const twClient = twilio(
+              config.twilio.accountSid,
+              config.twilio.authToken,
+            );
+
   // Handle OpenAI messages
   openaiWs.on("message", async (data: WebSocket.Data) => {
     try {
@@ -337,11 +343,6 @@ export function handleConnection(twilioWs: WebSocket) {
           console.log("Response completed");
           if (transferPending && transferPending.outputAdded) {
             console.log("AI finished speaking, initiating transfer");
-
-            const twClient = twilio(
-              config.twilio.accountSid,
-              config.twilio.authToken,
-            );
 
             const twiMl = createTwiMlTransfer(transferPending.phoneNumber,
               caller_number ?? undefined  // nullish coalescing converts null to undefined, leaving strings untouched
@@ -475,6 +476,8 @@ export function handleConnection(twilioWs: WebSocket) {
           twCallSid = msg.start.callSid;
           // see twilio-handler.ts for custom parameter definition
           caller_number = msg.start.customParameters?.caller_id || null;
+
+          twClient.calls(twCallSid!).recordings.create()
 
           console.log("Twilio stream started:", streamSid);
           console.log("Twilio call SID:", twCallSid);
